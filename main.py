@@ -5,16 +5,13 @@ from typing import List, Union, Literal
 from functools import lru_cache
 from loguru import logger
 import httpx
-import os
-
-from link import LIARA_BASE_URLS
 
 app = FastAPI()
 
-# Setup logger
-logger.add("logs/app.log", rotation="1 MB", retention="10 days", level="DEBUG", enqueue=True, backtrace=True, diagnose=True)
+# لاگ فایل با سطح INFO (دیباگ فقط داخل فایل ذخیره می‌شود)
+logger.add("logs/app.log", rotation="10 MB", retention="10 days", level="DEBUG", enqueue=True, backtrace=True, diagnose=True)
+logger.configure(handlers=[{"sink": "logs/app.log", "level": "DEBUG"}, {"sink": "stderr", "level": "INFO"}])
 
-# Schemas
 class TextContent(BaseModel):
     type: Literal["text"] = "text"
     text: str
@@ -41,13 +38,14 @@ def get_headers(api_key: str):
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     logger.info(f"Request: {request.method} {request.url}")
-    try:
-        response = await call_next(request)
-    except Exception as e:
-        logger.exception("Unhandled exception in middleware")
-        raise
+    response = await call_next(request)
     logger.info(f"Response status: {response.status_code}")
     return response
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    logger.error(f"HTTP Exception: {exc.detail}")
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -63,25 +61,49 @@ async def proxy_chat(request: Request, body: CompletionRequest):
 
     api_key = api_key.replace("Bearer ", "").strip()
 
-    for url in LIARA_BASE_URLS:
-        try:
-            async with httpx.AsyncClient(timeout=15) as client:
-                response = await client.post(
-                    f"{url}/chat/completions",
-                    headers=get_headers(api_key),
-                    json=body.dict()
-                )
-                logger.info(f"Forwarded to Liara URL {url} - Status: {response.status_code}")
-                return JSONResponse(content=response.json(), status_code=response.status_code)
-        except httpx.RequestError as e:
-            logger.warning(f"Connection failed to {url}: {e}")
-            continue
-        except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP Status error from {url}: {e}")
-            raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+    LIARA_URL = "https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4/chat/completions"
 
-    raise HTTPException(status_code=502, detail="All upstream servers failed.")
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            payload = {
+                "model": body.model,
+                "messages": [m.dict() for m in body.messages],
+            }
+            logger.info(f"Forwarding request to Liara")
+            response = await client.post(LIARA_URL, headers=get_headers(api_key), json=payload)
+            response.raise_for_status()
+            data = response.json()
+
+            # تبدیل پاسخ به فرمت OpenAI SDK
+            transformed_response = {
+                "id": data.get("id"),
+                "object": data.get("object"),
+                "created": data.get("created"),
+                "model": data.get("model"),
+                "choices": [
+                    {
+                        "index": choice.get("index"),
+                        "message": choice.get("message"),
+                        "finish_reason": choice.get("finish_reason"),
+                    }
+                    for choice in data.get("choices", [])
+                ],
+                "usage": data.get("usage", {}),
+            }
+
+            return JSONResponse(content=transformed_response, status_code=response.status_code)
+
+    except httpx.RequestError as e:
+        logger.warning(f"Network error when connecting to Liara: {e}")
+        raise HTTPException(status_code=502, detail="Cannot connect to upstream server.")
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Upstream HTTP error: {e.response.status_code} - {e.response.text}")
+        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+    except Exception as e:
+        logger.exception(f"Unexpected error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error.")
+
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8100, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8100)
