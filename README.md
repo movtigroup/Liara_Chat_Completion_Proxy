@@ -105,8 +105,8 @@ Simply add your new endpoint to `link.py`:
 
 ```python
 LIARA_API_PATHS = [
-    "682bb6c5009ad8b8440289b4",
-    "682bb8eb153623bd82f7d38e",
+    "682bb6c5009ad8b844028900",
+    "682bb8eb153623bd82f7d300",
     "your_new_endpoint_here"
 ]
 ```
