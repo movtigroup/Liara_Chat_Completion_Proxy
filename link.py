@@ -1,6 +1,6 @@
 LIARA_API_PATHS = [
-    "682bb6c5009ad8b8440289b4",
-    "682bb8eb153623bd82f7d38e",
+    "682bb6c5009ad8b844028900",
+    "682bb8eb153623bd82f7d300",
     # Add more API paths here as needed
 ]
 
