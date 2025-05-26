@@ -1,38 +1,37 @@
-
 # 🚀 Liara Chat Completion Proxy (FastAPI)
 
-یک API ساده و سریع با **FastAPI** که درخواست‌های `/chat/completions` را به سرورهای **لیارا** فوروارد می‌کند و از چند مسیر (multi-endpoint fallback) پشتیبانی می‌کند.
+A simple and fast **FastAPI** based API that proxies `/chat/completions` requests to Liara servers, supporting multi-endpoint fallback for high availability.
 
 ---
 
-## ✨ ویژگی‌ها
+## ✨ Features
 
-- 🤖 پشتیبانی از چند مدل:
+- 🤖 Supports multiple models:
   - `openai/gpt-4o-mini`
   - `google/gemini-2.0-flash-001`
-- 🖼️ پشتیبانی از ورودی‌های متنی و تصویری (متن + URL تصویر)
-- 🛡️ مدیریت خطاها و استثناها به صورت کامل و حرفه‌ای
-- 📜 لاگ‌گیری حرفه‌ای با **Loguru**
-- 🔄 امکان fallback به چند مسیر لیارا برای اطمینان از پاسخگویی
-- ⚙️ مناسب برای توسعه و استفاده در محیط تولید (Production)
+- 🖼️ Supports both text and image URL inputs (text + image_url)
+- 🛡️ Comprehensive error and exception handling
+- 📜 Professional logging with **Loguru**
+- 🔄 Fallback support to multiple Liara endpoints to ensure reliability
+- ⚙️ Suitable for both development and production environments
 
 ---
 
-## 🚀 راه‌اندازی و اجرا
+## 🚀 Getting Started
 
-### 1. نصب وابستگی‌ها
+### 1. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. اجرای لوکال با Uvicorn
+### 2. Run locally with Uvicorn
 
 ```bash
 uvicorn main:app --host 0.0.0.0 --port 8100 --reload
 ```
 
-### 3. یا اجرای در داکر
+### 3. Or run with Docker
 
 ```bash
 docker build -t liara-chat-proxy .
@@ -41,22 +40,22 @@ docker run -p 8100:8100 liara-chat-proxy
 
 ---
 
-## 🗂️ ساختار فایل‌ها
+## 🗂️ File Structure
 
 ```
 .
-├── main.py             # اپلیکیشن FastAPI
-├── link.py             # لیست URLهای سرور لیارا
-├── requirements.txt    # پکیج‌های پایتون
-├── Dockerfile          # اجرای سریع با داکر
-├── logs/app.log        # فایل لاگ (به صورت خودکار ساخته می‌شود)
+├── main.py             # FastAPI application
+├── link.py             # List of Liara server URLs
+├── requirements.txt    # Python packages
+├── Dockerfile          # Docker setup for quick deployment
+├── logs/app.log        # Log file (auto-generated)
 ```
 
 ---
 
-## 🧪 نمونه تست درخواست‌ها
+## 🧪 Example Test Requests
 
-### درخواست متنی (Text) با Curl
+### Text Request with Curl
 
 ```bash
 curl http://localhost:8100/api/v1/chat/completions \
@@ -65,14 +64,14 @@ curl http://localhost:8100/api/v1/chat/completions \
   -d '{
     "model": "openai/gpt-4o-mini",
     "messages": [
-      {"role": "user", "content": "معنای زندگی چیست؟"}
+      {"role": "user", "content": "What is the meaning of life?"}
     ]
   }'
 ```
 
 ---
 
-### درخواست ترکیبی متن و تصویر (Text + Image URL)
+### Mixed Text and Image URL Request
 
 ```bash
 curl http://localhost:8100/api/v1/chat/completions \
@@ -84,7 +83,7 @@ curl http://localhost:8100/api/v1/chat/completions \
       {
         "role": "user",
         "content": [
-          {"type": "text", "text": "چه چیزی در این تصویر می‌بینی؟"},
+          {"type": "text", "text": "What do you see in this image?"},
           {"type": "image_url", "image_url": {"url": "https://example.com/image.jpg"}}
         ]
       }
@@ -94,20 +93,22 @@ curl http://localhost:8100/api/v1/chat/completions \
 
 ---
 
-## 🛠 افزودن مسیر جدید لیارا
+## 🛠 Adding New Liara Endpoints
 
-کافیست در فایل `link.py` خط مربوط به مسیر جدید را اضافه کنید:
+Simply add your new endpoint path in the `link.py` file:
 
 ```python
 LIARA_API_PATHS = [
     "682bb6c5009ad8b844028900",
     "682bb8eb153623bd82f7d300",
-    "مسیر_جدید_خودت_اینجا_اضافه_کن"
+    "your_new_endpoint_here"
 ]
 ```
 
 ---
 
-## ❤️ ساخته شده با ❤️ توسط MovtiGroup و FastAPI
+## ❤️ Built with ❤️ by MovtiGroup and FastAPI
 
 ---
+
+If you want, I can also provide you with the **Persian-README.md** version. Just ask!  
