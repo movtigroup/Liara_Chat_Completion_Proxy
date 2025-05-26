@@ -1,12 +1,11 @@
-FROM python:3.11-slim
+پFROM python:3.11-slim
 
 WORKDIR /app
 
 COPY . /app
 
-RUN pip install --no-cache-dir -r requirements.txt
-
-RUN mkdir -p /app/logs
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 8100
 
