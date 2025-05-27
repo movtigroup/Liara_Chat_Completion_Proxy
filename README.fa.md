@@ -1,5 +1,11 @@
 
 # 🚀 پراکسی تکمیل چت لیارا (FastAPI)
+![Python Version](https://img.shields.io/badge/Python-3.13%2B-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.68%2B-purple )
+![Build](https://img.shields.io/badge/Build-passing-brightgreen )
+[![Open in GitHub](https://img.shields.io/badge/GitHub-Repo-blue?logo=github)](https://github.com/movtigroup)
+
 
 یک API ساده و سریع مبتنی بر **FastAPI** که درخواست‌های `/chat/completions` را به سرورهای لیارا فوروارد می‌کند و از fallback چندمسیره برای پایداری بالا پشتیبانی می‌کند.
 
@@ -123,3 +129,10 @@ LIARA_API_PATHS = [
 برای نسخه انگلیسی این README اینجا کلیک کنید: [README.md](README.md)
 
 ---
+---
+## 📜 License | مجوز
+```text
+MIT License © 2025 MOVTIGROUP
+```
+
+[![Open in GitHub](https://img.shields.io/badge/GitHub-Repo-blue?logo=github)](https://github.com/movtigroup)
