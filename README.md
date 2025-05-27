@@ -1,4 +1,9 @@
 # 🚀 Liara Chat Completion Proxy (FastAPI)
+![Python Version](https://img.shields.io/badge/Python-3.13%2B-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.68%2B-purple )
+![Build](https://img.shields.io/badge/Build-passing-brightgreen )
+[![Open in GitHub](https://img.shields.io/badge/GitHub-Repo-blue?logo=github)](https://github.com/tahatehran)
 
 A simple and fast **FastAPI** based proxy API forwarding `/chat/completions` requests to Liara servers with multi-endpoint fallback support for high availability.
 
@@ -122,4 +127,10 @@ LIARA_API_PATHS = [
 If you want the **Persian (Farsi)** version of this README, check out: [README.fa.md](README.fa.md)
 
 
+---
+## 📜 License | مجوز
+```text
+MIT License © 2025 MOVTIGROUP
+```
 
+[![Open in GitHub](https://img.shields.io/badge/GitHub-Repo-blue?logo=github)](https://github.com/tahatehran)
