@@ -1,0 +1,13 @@
+{
+  "app": "cryptoppi",
+  "port": 8100,
+  "build": {
+    "location": "germany",
+    "base": "python"
+  },
+  "disks": [],
+  "env": {
+    "PYTHONUNBUFFERED": "1",
+    "TZ": "Asia/Tehran"
+  }
+}

@@ -1,0 +1,16 @@
+version: '3.9'
+
+services:
+  ai-proxy:
+    build: .
+    image: ai-proxy:latest
+    container_name: ai-proxy
+    restart: unless-stopped
+    ports:
+      - "8100:8100"
+    volumes:
+      - ./logs:/app/logs
+      - ./static:/app/static
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=Asia/Tehran
