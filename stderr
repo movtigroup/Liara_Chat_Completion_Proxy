@@ -1,4 +1,3 @@
-
 2025-06-30 09:59:12.751 | INFO     | main:dispatch:88 - Request: POST http://testserver/api/v1/chat/completions
 2025-06-30 09:59:12.753 | WARNING  | main:http_exception_handler:109 - HTTPException: API Key is required in Authorization header
 2025-06-30 09:59:12.754 | INFO     | main:dispatch:100 - Response: 401 (2.44ms)
