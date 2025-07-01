@@ -2,13 +2,21 @@ name: Docker Image CI for Docker Hub
 
 on:
   push:
-    branches: [ "main" ] # Adjust if your main branch is different, e.g., "master"
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+    branches: ["main"] # Change to your default branch if different
+  pull_request: {}     # Optional: enable PR checks
+  workflow_dispatch: {} # Allows manual trigger from Actions tab
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: tahatehrani/liara_chat_completion_proxy
 
 jobs:
   build_and_push:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -17,22 +25,26 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
+      - name: Extract metadata (tags, labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: tahatehrani/liara_chat_completion_proxy
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            latest
+            {{gitsha}}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }} # Push only on direct pushes/merges to branch, not PRs
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
