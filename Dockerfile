@@ -16,8 +16,8 @@ FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/home/appuser/.local/bin:$PATH" \
-    PYTHONPATH=/app \
-    UVICORN_WORKERS=${UVICORN_WORKERS:-4} # Default to 4 if not set
+    PYTHONPATH=/app
+    # UVICORN_WORKERS will be handled by CMD's default shell expansion
 
 WORKDIR /app
 
@@ -36,5 +36,5 @@ USER appuser
 
 EXPOSE 8100
 
-# CMD will use $UVICORN_WORKERS set by ENV or docker-compose
-CMD uvicorn main:app --host 0.0.0.0 --port 8100 --workers "$UVICORN_WORKERS"
+# Use sh -c to allow shell expansion for default worker count
+CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port 8100 --workers ${UVICORN_WORKERS:-4}"]
