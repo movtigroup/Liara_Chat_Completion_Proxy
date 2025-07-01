@@ -3,8 +3,9 @@ import json
 import uuid
 import time
 import asyncio
-from typing import Dict
-from fastapi import FastAPI, Request, HTTPException, WebSocket, WebSocketDisconnect
+from typing import Dict, Literal
+from fastapi import FastAPI, Request, HTTPException, WebSocket, WebSocketDisconnect, APIRouter, Security
+from fastapi.security.api_key import APIKeyHeader
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
@@ -25,11 +26,65 @@ from errors import (
     GeneralProxyError,
 )
 
+# API Key Authentication
+from typing import Dict, Literal, Tuple # Added Tuple
+
+API_KEY_NAME = "Authorization"
+api_key_header_scheme = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+
+APIKeyDetails = Tuple[str, Literal["v1_customer", "v2_business"]]
+
+async def get_api_key_details(api_key_header: str = Security(api_key_header_scheme)) -> APIKeyDetails:
+    if not api_key_header or not api_key_header.startswith("Bearer "):
+        # This specific check might be better handled by auto_error=True on APIKeyHeader if we only want bearer
+        # but custom message is also fine.
+        raise HTTPException(status_code=401, detail="Authorization header is missing or not a Bearer token.")
+
+    api_key = api_key_header.replace("Bearer ", "").strip()
+
+    if not api_key:
+        raise HTTPException(status_code=401, detail="API Key is empty after stripping Bearer prefix.")
+
+    # Placeholder logic for tier differentiation & validation
+    # In a real system, this would involve checking against a database or secure configuration.
+    if api_key.startswith("biz-valid-") and len(api_key) > len("biz-valid-"): # Ensure there's something after prefix
+        return api_key, "v2_business"
+    elif api_key.startswith("cust-valid-") and len(api_key) > len("cust-valid-"):
+        return api_key, "v1_customer"
+    elif api_key == "test-api-key": # Grandfathering old test key to v1 for existing tests
+        return api_key, "v1_customer"
+
+    # If key doesn't match any known valid format or tier
+    raise HTTPException(status_code=403, detail="Invalid API Key or tier.")
+
+
+# Rate Limiters
+limiter = Limiter(key_func=get_remote_address) # Main limiter instance
+
+# Specific limiters for different tiers - applied per route.
+# These strings need to be registered if not using default_limits in the main Limiter.
+# For simplicity, we can apply them directly in decorators if slowapi supports it,
+# or have different limiter instances. Let's use different instances.
+
+limiter_v1 = Limiter(key_func=get_remote_address, default_limits=["100/minute"], strategy="fixed-window")
+limiter_v2 = Limiter(key_func=get_remote_address, default_limits=["1000/minute"], strategy="fixed-window")
+
+
 app = FastAPI(
     title="AI Proxy API",
-    description="پروکسی پیشرفته برای مدل‌های هوش مصنوعی",
-    version="2.0",
+    description="پروکسی پیشرفته برای مدل‌های هوش مصنوعی, now with v1 (Customer) and v2 (Business) tiers.",
+    version="2.1", # Version bump
 )
+app.state.limiter = limiter # Global limiter for non-tiered specific checks if any, or for slowapi state
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# Routers
+router_v1 = APIRouter(prefix="/api/v1")
+router_v2 = APIRouter(prefix="/api/v2")
+ws_router_v1 = APIRouter(prefix="/ws/v1")
+ws_router_v2 = APIRouter(prefix="/ws/v2")
+
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -125,18 +180,19 @@ async def serve_documentation():
     return HTMLResponse(content=open("static/index.html", "r").read(), status_code=200)
 
 
-@app.post("/api/v1/chat/completions")
-@limiter.limit("100/minute")
-async def chat_completions(request: Request, body: CompletionRequest):
-    """پایان‌پوینت اصلی برای چت"""
-    api_key = request.headers.get("Authorization")
-    if not api_key or not api_key.startswith("Bearer "):
-        raise HTTPException(
-            status_code=401, detail="API Key is required in Authorization header"
-        )
+# Shared logic for HTTP chat completions
+async def _handle_chat_completions_request(
+    api_key_details: APIKeyDetails, # Now expects the tuple from get_api_key_details
+    body: CompletionRequest
+):
+    """Handles the core logic for chat completions, shared by v1 and v2."""
+    api_key, tier = api_key_details # Unpack the key and tier
 
-    api_key = api_key.replace("Bearer ", "").strip()
-    request_data = body.model_dump(exclude_unset=True) # Changed .dict() to .model_dump() for Pydantic V2
+    # Tier could be used here in the future for tier-specific logic (e.g., different models, logging)
+    # logger.info(f"Handling chat completion for tier: {tier} with key: {api_key[:10]}...")
+
+
+    request_data = body.model_dump(exclude_unset=True)
 
     # بررسی کش
     cache_key = generate_cache_key(request_data)
@@ -207,23 +263,55 @@ async def chat_completions(request: Request, body: CompletionRequest):
     # If LIARA_BASE_URLS was empty or all servers failed in a way that didn't set last_exception (should not happen with current logic)
     raise UpstreamServiceDownError(detail="All AI service endpoints are currently unavailable or failed.")
 
+# --- V1 API Endpoints ---
+@router_v1.post("/chat/completions", response_model=None) # response_model can be more specific if needed
+@limiter_v1.limit("100/minute") # Apply v1 rate limit
+async def v1_chat_completions(
+    request: Request, # Required by slowapi
+    body: CompletionRequest,
+    api_key_details: APIKeyDetails = Security(get_api_key_details)
+):
+    """Customer Tier Chat Completions."""
+    _, tier = api_key_details
+    if tier != "v1_customer":
+        # This check could also be part of get_api_key_details by passing expected_tier
+        raise HTTPException(status_code=403, detail="This API key is not authorized for v1 (Customer) access.")
 
-@app.websocket("/ws/v1/chat/completions")
-async def websocket_chat(websocket: WebSocket):
-    """WebSocket برای چت استریمینگ"""
+    # The first element of api_key_details is the actual key string
+    return await _handle_chat_completions_request(api_key_details, body)
+
+# --- V2 API Endpoints ---
+@router_v2.post("/chat/completions", response_model=None)
+@limiter_v2.limit("1000/minute") # Apply v2 rate limit
+async def v2_chat_completions(
+    request: Request, # Required by slowapi
+    body: CompletionRequest,
+    api_key_details: APIKeyDetails = Security(get_api_key_details)
+):
+    """Business Tier Chat Completions."""
+    _, tier = api_key_details
+    if tier != "v2_business":
+        raise HTTPException(status_code=403, detail="This API key is not authorized for v2 (Business) access.")
+
+    return await _handle_chat_completions_request(api_key_details, body)
+
+
+# Shared logic for WebSocket chat
+async def _handle_websocket_chat(websocket: WebSocket, raw_api_key: str, tier_for_logging: str):
+    """Handles the core logic for WebSocket chat, shared by v1 and v2."""
+    # `raw_api_key` is the plain key string.
+    # `tier_for_logging` is "v1_customer" or "v2_business".
+
     connection_id = str(uuid.uuid4())
     await manager.connect(websocket, connection_id)
+    logger.info(f"WebSocket connection {connection_id} established for tier: {tier_for_logging}")
 
     try:
-        # دریافت API Key
-        auth_data = await websocket.receive_json()
-        api_key = auth_data.get("api_key")
-        if not api_key:
-            await websocket.send_json({"error": "API Key is required"})
-            return
+        # API Key already validated by the endpoint decorator's dependency.
+        # We have `raw_api_key` to use with `get_headers`.
 
         # دریافت تنظیمات مدل
-        config = await websocket.receive_json()
+        config = await websocket.receive_json() # First message after auth is config
         request_data = {
             "model": config.get("model", "openai/gpt-4o-mini"),
             "messages": config.get("messages", []),
@@ -305,6 +393,112 @@ async def websocket_chat(websocket: WebSocket):
     finally:
         await manager.disconnect(connection_id) # Ensure disconnect is awaited
 
+# --- V1 WebSocket Endpoints ---
+@ws_router_v1.websocket("/chat/completions")
+async def ws_v1_chat_completions(websocket: WebSocket):
+    """Customer Tier WebSocket Chat Completions."""
+    # Apply v1 rate limit conceptually here - slowapi doesn't directly decorate websockets easily.
+    # This would typically be handled by checking request count against IP/key in ConnectionManager
+    # or via a more complex setup if strict per-message rate limiting is needed.
+    # For now, we acknowledge the design for different limits but don't implement WS rate limiting.
+
+    # Manual API Key Auth for WebSocket
+    try:
+        auth_data = await websocket.receive_json()
+        api_key_header_sim = auth_data.get("api_key") # Expecting format like "Bearer <key>"
+        if not api_key_header_sim: # Basic check
+             await websocket.send_json({"error": "API key is required as first message: {\"api_key\": \"Bearer <YOUR_KEY>\"}"})
+             await websocket.close()
+             return
+
+        # Use a modified inline version of get_api_key_details logic
+        if not api_key_header_sim.startswith("Bearer "):
+            await websocket.send_json({"error": "Invalid API Key format. Expected Bearer token."})
+            await websocket.close()
+            return
+
+        api_key = api_key_header_sim.replace("Bearer ", "").strip()
+        if not api_key:
+            await websocket.send_json({"error": "API Key is empty."})
+            await websocket.close()
+            return
+
+        tier = "invalid"
+        if api_key.startswith("cust-valid-") and len(api_key) > len("cust-valid-"):
+            tier = "v1_customer"
+        elif api_key == "test-api-key":
+            tier = "v1_customer"
+
+        if tier != "v1_customer":
+            await websocket.send_json({"error": "This API key is not authorized for v1 (Customer) WebSocket access."})
+            await websocket.close()
+            return
+
+        # If auth successful, proceed to shared handler
+        await _handle_websocket_chat(websocket, api_key, "v1_customer")
+
+    except json.JSONDecodeError:
+        await websocket.send_json({"error": "Invalid JSON message format for authentication."})
+        await websocket.close()
+    except Exception as e: # Catch any other errors during auth phase
+        logger.error(f"WebSocket auth error: {e}", exc_info=True)
+        try:
+            await websocket.send_json({"error": "Authentication failed."})
+        except: pass # Ignore if sending fails
+        await websocket.close()
+
+
+# --- V2 WebSocket Endpoints ---
+@ws_router_v2.websocket("/chat/completions")
+async def ws_v2_chat_completions(websocket: WebSocket):
+    """Business Tier WebSocket Chat Completions."""
+    # Similar acknowledgement for v2 rate limiting for WebSockets.
+    try:
+        auth_data = await websocket.receive_json()
+        api_key_header_sim = auth_data.get("api_key")
+        if not api_key_header_sim:
+             await websocket.send_json({"error": "API key is required as first message: {\"api_key\": \"Bearer <YOUR_KEY>\"}"})
+             await websocket.close()
+             return
+
+        if not api_key_header_sim.startswith("Bearer "):
+            await websocket.send_json({"error": "Invalid API Key format. Expected Bearer token."})
+            await websocket.close()
+            return
+
+        api_key = api_key_header_sim.replace("Bearer ", "").strip()
+        if not api_key:
+            await websocket.send_json({"error": "API Key is empty."})
+            await websocket.close()
+            return
+
+        tier = "invalid"
+        if api_key.startswith("biz-valid-") and len(api_key) > len("biz-valid-"):
+            tier = "v2_business"
+
+        if tier != "v2_business":
+            await websocket.send_json({"error": "This API key is not authorized for v2 (Business) WebSocket access."})
+            await websocket.close()
+            return
+
+        await _handle_websocket_chat(websocket, api_key, "v2_business")
+
+    except json.JSONDecodeError:
+        await websocket.send_json({"error": "Invalid JSON message format for authentication."})
+        await websocket.close()
+    except Exception as e:
+        logger.error(f"WebSocket auth error: {e}", exc_info=True)
+        try:
+            await websocket.send_json({"error": "Authentication failed."})
+        except: pass
+        await websocket.close()
+
+
+# Include routers in the main app
+app.include_router(router_v1)
+app.include_router(router_v2)
+app.include_router(ws_router_v1)
+app.include_router(ws_router_v2)
 
 if __name__ == "__main__":
     import uvicorn
