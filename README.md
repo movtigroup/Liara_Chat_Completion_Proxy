@@ -32,6 +32,23 @@
 
 ---
 
+## Versioning API و سطوح دسترسی
+
+این API دو سطح دسترسی ارائه می‌دهد:
+
+*   **v1 (مشتریان / Customer)**: برای استفاده عمومی و توسعه‌دهندگان فردی.
+    *   مسیرهای API: `/api/v1/...` و `/ws/v1/...`
+    *   کلیدهای API با پیشوند `cust-valid-` یا کلید قدیمی `test-api-key`.
+    *   محدودیت درخواست: ۱۰۰ درخواست در دقیقه (پیش‌فرض).
+*   **v2 (کسب‌وکارها / Business)**: برای کاربران تجاری با نیاز به ظرفیت بالاتر و ویژگی‌های بالقوه پیشرفته‌تر در آینده.
+    *   مسیرهای API: `/api/v2/...` و `/ws/v2/...`
+    *   کلیدهای API با پیشوند `biz-valid-`.
+    *   محدودیت درخواست: ۱۰۰۰ درخواست در دقیقه (پیش‌فرض).
+
+در حال حاضر، عملکرد اصلی هر دو نسخه v1 و v2 یکسان است، اما این ساختار امکان توسعه ویژگی‌های اختصاصی برای هر سطح را در آینده فراهم می‌کند.
+
+---
+
 ## 🚀 شروع سریع
 
 ### 1. نصب وابستگی‌ها
@@ -45,9 +62,39 @@ uvicorn main:app --host 0.0.0.0 --port 8100 --reload
 ```
 
 ### 3. اجرا با Docker
+
+#### الف) استفاده از Docker Hub Image (پیشنهادی)
+تصویر Docker این پروژه به صورت خودکار در Docker Hub منتشر می‌شود. شما می‌توانید آخرین نسخه را با دستور زیر اجرا کنید:
+
 ```bash
-docker build -t ai-proxy .
-docker run -d -p 8100:8100 --name ai-proxy ai-proxy
+docker run -d -p 8100:8100 \
+  -e UVICORN_WORKERS=2 \
+  -e TZ=Asia/Tehran \
+  --name ai-proxy \
+  tahatehrani/liara_chat_completion_proxy:latest
+```
+-   `-e UVICORN_WORKERS=2`: تعداد پردازش‌های Uvicorn را تنظیم می‌کند. متناسب با CPU سرور خود تنظیم کنید (مثلاً `تعداد هسته‌ها * 2 + 1`).
+-   `-e TZ=Asia/Tehran`: منطقه زمانی را برای لاگ‌ها تنظیم می‌کند.
+
+#### ب) ساخت محلی (Local Build)
+اگر می‌خواهید تصویر را خودتان بسازید:
+```bash
+docker build -t my-ai-proxy .
+docker run -d -p 8100:8100 \
+  -e UVICORN_WORKERS=2 \
+  -e TZ=Asia/Tehran \
+  --name my-ai-proxy \
+  my-ai-proxy
+```
+
+#### ج) استفاده از Docker Compose
+برای اجرای آسان با تنظیمات پیش‌فرض (شامل `UVICORN_WORKERS=2` و `restart: unless-stopped`):
+```bash
+docker-compose up -d
+```
+برای متوقف کردن:
+```bash
+docker-compose down
 ```
 
 ### 4. دسترسی به رابط کاربری
@@ -63,9 +110,9 @@ docker run -d -p 8100:8100 --name ai-proxy ai-proxy
 import httpx
 import json
 
-url = "http://localhost:8100/api/v1/chat/completions"
+url = "http://localhost:8100/api/v1/chat/completions" # v1 endpoint
 headers = {
-    "Authorization": "Bearer YOUR_API_KEY",
+    "Authorization": "Bearer test-api-key", # Example v1 customer key
     "Content-Type": "application/json"
 }
 
@@ -89,9 +136,9 @@ import asyncio
 import json
 
 async def chat_stream():
-    async with websockets.connect("ws://localhost:8100/ws/v1/chat/completions") as ws:
+    async with websockets.connect("ws://localhost:8100/ws/v1/chat/completions") as ws: # v1 endpoint
         # ارسال API Key
-        await ws.send(json.dumps({"api_key": "YOUR_API_KEY"}))
+        await ws.send(json.dumps({"api_key": "Bearer test-api-key"})) # Example v1 customer key, sent in Bearer format
         
         # ارسال تنظیمات چت
         config = {
@@ -140,7 +187,7 @@ asyncio.run(chat_stream())
 ### درخواست متنی
 ```bash
 curl http://localhost:8100/api/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer test-api-key" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai/gpt-4o-mini",
@@ -153,7 +200,7 @@ curl http://localhost:8100/api/v1/chat/completions \
 ### درخواست ترکیبی متن و تصویر
 ```bash
 curl http://localhost:8100/api/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer test-api-key" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "google/gemini-2.0-flash-001",
@@ -175,7 +222,7 @@ const ws = new WebSocket('ws://localhost:8100/ws/v1/chat/completions');
 
 ws.onopen = () => {
   ws.send(JSON.stringify({
-    api_key: "YOUR_API_KEY"
+    api_key: "Bearer test-api-key" // Example v1 customer key, sent in Bearer format
   }));
   
   ws.send(JSON.stringify({
