@@ -3,7 +3,6 @@
 ![Python Version](https://img.shields.io/badge/Python-3.11%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-purple)
-![Build](https://img.shields.io/badge/Build-passing-brightgreen)
 [![Open in GitHub](https://img.shields.io/badge/GitHub-Repo-blue?logo=github)](https://github.com/tahatehran)
 
 **Advanced proxy for AI models** with support for multiple advanced models and professional features including streaming, caching, error management, and WebSocket interface.
@@ -169,11 +168,11 @@ asyncio.run(chat_stream())
 ├── .github/
 │   └── workflows/
 │       └── liara.yaml  # For CI/CD deployment to Liara
+├── .env                # For local environment variables (see .env.example if provided)
 ├── Dockerfile
 ├── docker-compose.yml
 ├── errors.py
 ├── link.py
-├── logs/
 ├── main.py
 ├── pytest.ini
 ├── requirements.txt
@@ -246,10 +245,17 @@ ws.onmessage = (event) => {
 ---
 
 ## 🛠 Deployment (Liara)
-Deployment to Liara is handled via the GitHub Actions workflow defined in `.github/workflows/liara.yaml`. This workflow automates the deployment process upon pushes to the `main` branch.
-The necessary configurations (app name, port, API token) are managed within the workflow file and GitHub secrets.
 
-The `liara.json` file is no longer used.
+This application (version 2.1+, based on Python 3.11) is designed to be deployed on Liara. Deployment is typically handled via the GitHub Actions workflow defined in `.github/workflows/liara.yaml`, which automates the process upon pushes to the `main` branch. The necessary configurations (app name, port, API token) are managed within the workflow file and GitHub secrets.
+
+**Resource Recommendations for Liara:**
+For comfortable and stable operation, it is recommended to choose a Liara plan that provides at least:
+-   **CPU:** 0.5 cores
+-   **RAM:** 500 MB
+
+While the application might run on lower resources (e.g., minimum 125MB RAM for very light use, as per recent optimizations), 500MB RAM provides a better buffer for handling concurrent requests, caching, and background tasks performed by the Uvicorn workers and the FastAPI application. Always monitor your application's resource usage on Liara and adjust your plan as needed.
+
+The `liara.json` file is no longer used for deployment if using the GitHub Actions workflow.
 
 ---
 
