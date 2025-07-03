@@ -6,13 +6,13 @@
 ![Build](https://img.shields.io/badge/Build-passing-brightgreen)
 [![Open in GitHub](https://img.shields.io/badge/GitHub-Repo-blue?logo=github)](https://github.com/tahatehran)
 
-**پروکسی پیشرفته برای مدل‌های هوش مصنوعی** با پشتیبانی از چندین مدل پیشرفته و قابلیت‌های حرفه‌ای شامل استریمینگ، کشینگ، مدیریت خطا و رابط وب‌سوکت.
+**Advanced proxy for AI models** with support for multiple advanced models and professional features including streaming, caching, error management, and WebSocket interface.
 
 ---
 
-## ✨ ویژگی‌های کلیدی
+## ✨ Key Features
 
-### 🤖 پشتیبانی از مدل‌های پیشرفته:
+### 🤖 Support for Advanced Models:
 - `openai/gpt-4o-mini`
 - `google/gemini-2.0-flash-001`
 - `deepseek/deepseek-v3-0324`
@@ -20,51 +20,51 @@
 - `anthropic/claude-3-7-sonnet`
 - `anthropic/claude-3-5-sonnet`
 
-### 🚀 قابلیت‌های حرفه‌ای:
-- 🔄 WebSocket API برای استریمینگ واقعی
-- 💾 سیستم کش پیشرفته برای پاسخ‌های سریعتر
-- ⚙️ محدودیت درخواست (100 درخواست در دقیقه)
-- 🖥️ رابط کاربری HTML/CSS/JS برای تست و مستندات
-- 🐳 پشتیبانی کامل از Docker
-- 📊 لاگ‌گیری حرفه‌ای با Loguru
-- 🛡️ مدیریت خطای پیشرفته
-- 🔄 پشتیبانی از چندین سرور لیارا با قابلیت Fallback
+### 🚀 Professional Features:
+- 🔄 WebSocket API for real-time streaming
+- 💾 Advanced caching system for faster responses
+- ⚙️ Rate limiting (default: 100 requests per minute for v1, 1000 for v2 - now dynamic)
+- 🖥️ HTML/CSS/JS user interface for testing and documentation
+- 🐳 Full Docker support
+- 📊 Professional logging with Loguru
+- 🛡️ Advanced error management
+- 🔄 Support for multiple Liara servers with Fallback capability
 
 ---
 
-## Versioning API و سطوح دسترسی
+## API Versioning and Access Tiers
 
-این API دو سطح دسترسی ارائه می‌دهد:
+This API offers two access tiers:
 
-*   **v1 (مشتریان / Customer)**: برای استفاده عمومی و توسعه‌دهندگان فردی.
-    *   مسیرهای API: `/api/v1/...` و `/ws/v1/...`
-    *   کلیدهای API با پیشوند `cust-valid-` یا کلید قدیمی `test-api-key`.
-    *   محدودیت درخواست: ۱۰۰ درخواست در دقیقه (پیش‌فرض).
-*   **v2 (کسب‌وکارها / Business)**: برای کاربران تجاری با نیاز به ظرفیت بالاتر و ویژگی‌های بالقوه پیشرفته‌تر در آینده.
-    *   مسیرهای API: `/api/v2/...` و `/ws/v2/...`
-    *   کلیدهای API با پیشوند `biz-valid-`.
-    *   محدودیت درخواست: ۱۰۰۰ درخواست در دقیقه (پیش‌فرض).
+*   **v1 (Customers)**: For general use and individual developers.
+    *   API Paths: `/api/v1/...` and `/ws/v1/...`
+    *   API Keys with prefix `cust-valid-` or the legacy key `test-api-key`.
+    *   Rate Limit: Default 100 requests per minute (now dynamically adjusted).
+*   **v2 (Businesses)**: For business users requiring higher capacity and potentially more advanced features in the future.
+    *   API Paths: `/api/v2/...` and `/ws/v2/...`
+    *   API Keys with prefix `biz-valid-`.
+    *   Rate Limit: Default 1000 requests per minute (now dynamically adjusted).
 
-در حال حاضر، عملکرد اصلی هر دو نسخه v1 و v2 یکسان است، اما این ساختار امکان توسعه ویژگی‌های اختصاصی برای هر سطح را در آینده فراهم می‌کند.
+Currently, the core functionality of both v1 and v2 versions is the same, but this structure allows for the development of dedicated features for each tier in the future.
 
 ---
 
-## 🚀 شروع سریع
+## 🚀 Quick Start
 
-### 1. نصب وابستگی‌ها
+### 1. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. اجرای سرور
+### 2. Run the Server
 ```bash
 uvicorn main:app --host 0.0.0.0 --port 8100 --reload
 ```
 
-### 3. اجرا با Docker
+### 3. Run with Docker
 
-#### الف) استفاده از Docker Hub Image (پیشنهادی)
-تصویر Docker این پروژه به صورت خودکار در Docker Hub منتشر می‌شود. شما می‌توانید آخرین نسخه را با دستور زیر اجرا کنید:
+#### A) Using Docker Hub Image (Recommended)
+The Docker image for this project is automatically published to Docker Hub. You can run the latest version with the following command:
 
 ```bash
 docker run -d -p 8100:8100 \
@@ -73,11 +73,11 @@ docker run -d -p 8100:8100 \
   --name ai-proxy \
   tahatehrani/liara_chat_completion_proxy:latest
 ```
--   `-e UVICORN_WORKERS=2`: تعداد پردازش‌های Uvicorn را تنظیم می‌کند. متناسب با CPU سرور خود تنظیم کنید (مثلاً `تعداد هسته‌ها * 2 + 1`).
--   `-e TZ=Asia/Tehran`: منطقه زمانی را برای لاگ‌ها تنظیم می‌کند.
+-   `-e UVICORN_WORKERS=2`: Sets the number of Uvicorn worker processes. Adjust according to your server's CPU (e.g., `number of cores * 2 + 1`).
+-   `-e TZ=Asia/Tehran`: Sets the timezone for logs.
 
-#### ب) ساخت محلی (Local Build)
-اگر می‌خواهید تصویر را خودتان بسازید:
+#### B) Local Build
+If you want to build the image yourself:
 ```bash
 docker build -t my-ai-proxy .
 docker run -d -p 8100:8100 \
@@ -87,25 +87,25 @@ docker run -d -p 8100:8100 \
   my-ai-proxy
 ```
 
-#### ج) استفاده از Docker Compose
-برای اجرای آسان با تنظیمات پیش‌فرض (شامل `UVICORN_WORKERS=2` و `restart: unless-stopped`):
+#### C) Using Docker Compose
+For easy execution with default settings (includes `UVICORN_WORKERS=2` and `restart: unless-stopped` by default in the provided `docker-compose.yml`):
 ```bash
 docker-compose up -d
 ```
-برای متوقف کردن:
+To stop:
 ```bash
 docker-compose down
 ```
 
-### 4. دسترسی به رابط کاربری
-باز کردن مرورگر و رفتن به آدرس:  
+### 4. Access User Interface
+Open your browser and go to:
 `http://localhost:8100`
 
 ---
 
-## 🧪 نمونه کد کلاینت پایتون
+## 🧪 Python Client Code Samples
 
-### اتصال به API معمولی
+### Connecting to the Standard API
 ```python
 import httpx
 import json
@@ -119,7 +119,7 @@ headers = {
 data = {
     "model": "openai/gpt-4o-mini",
     "messages": [
-        {"role": "user", "content": "سلام، چطوری؟"}
+        {"role": "user", "content": "Hello, how are you?"}
     ],
     "temperature": 0.7,
     "max_tokens": 500
@@ -129,7 +129,7 @@ response = httpx.post(url, headers=headers, json=data)
 print(response.json())
 ```
 
-### اتصال به WebSocket (استریمینگ)
+### Connecting to WebSocket (Streaming)
 ```python
 import websockets
 import asyncio
@@ -137,18 +137,18 @@ import json
 
 async def chat_stream():
     async with websockets.connect("ws://localhost:8100/ws/v1/chat/completions") as ws: # v1 endpoint
-        # ارسال API Key
+        # Send API Key
         await ws.send(json.dumps({"api_key": "Bearer test-api-key"})) # Example v1 customer key, sent in Bearer format
         
-        # ارسال تنظیمات چت
+        # Send chat configuration
         config = {
             "model": "openai/gpt-4o-mini",
-            "messages": [{"role": "user", "content": "درباره هوش مصنوعی توضیح بده"}],
+            "messages": [{"role": "user", "content": "Explain artificial intelligence."}],
             "stream": True
         }
         await ws.send(json.dumps(config))
         
-        # دریافت پاسخ استریم
+        # Receive stream response
         async for message in ws:
             data = json.loads(message)
             if "error" in data:
@@ -163,28 +163,34 @@ asyncio.run(chat_stream())
 
 ---
 
-## 🗂️ ساختار پروژه
+## 🗂️ Project Structure
 ```
 .
+├── .github/
+│   └── workflows/
+│       └── liara.yaml  # For CI/CD deployment to Liara
 ├── Dockerfile
 ├── docker-compose.yml
-├── liara.json
+├── errors.py
 ├── link.py
+├── logs/
 ├── main.py
+├── pytest.ini
 ├── requirements.txt
 ├── schemas.py
-├── static
+├── static/
 │   ├── index.html
 │   ├── script.js
 │   └── style.css
+├── tests/
 └── utils.py
 ```
 
 ---
 
-## 🧪 نمونه درخواست‌ها
+## 🧪 Sample Requests
 
-### درخواست متنی
+### Text Request
 ```bash
 curl http://localhost:8100/api/v1/chat/completions \
   -H "Authorization: Bearer test-api-key" \
@@ -192,12 +198,12 @@ curl http://localhost:8100/api/v1/chat/completions \
   -d '{
     "model": "openai/gpt-4o-mini",
     "messages": [
-      {"role": "user", "content": "معنی زندگی چیست؟"}
+      {"role": "user", "content": "What is the meaning of life?"}
     ]
   }'
 ```
 
-### درخواست ترکیبی متن و تصویر
+### Combined Text and Image Request
 ```bash
 curl http://localhost:8100/api/v1/chat/completions \
   -H "Authorization: Bearer test-api-key" \
@@ -208,7 +214,7 @@ curl http://localhost:8100/api/v1/chat/completions \
       {
         "role": "user",
         "content": [
-          {"type": "text", "text": "چه چیزی در این تصویر می‌بینی؟"},
+          {"type": "text", "text": "What do you see in this image?"},
           {"type": "image_url", "image_url": {"url": "https://example.com/image.jpg"}}
         ]
       }
@@ -216,7 +222,7 @@ curl http://localhost:8100/api/v1/chat/completions \
   }'
 ```
 
-### درخواست WebSocket
+### WebSocket Request (JavaScript Example)
 ```javascript
 const ws = new WebSocket('ws://localhost:8100/ws/v1/chat/completions');
 
@@ -227,7 +233,7 @@ ws.onopen = () => {
   
   ws.send(JSON.stringify({
     model: "openai/gpt-4o-mini",
-    messages: [{role: "user", content: "سلام"}],
+    messages: [{role: "user", content: "Hello"}],
     stream: true
   }));
 };
@@ -239,31 +245,19 @@ ws.onmessage = (event) => {
 
 ---
 
-## 🛠 پیکربندی Liara
-فایل `liara.json` را با مقادیر مناسب پر کنید:
-```json
-{
-  "app": "your-app-name",
-  "port": 8100,
-  "build": {
-    "location": "germany",
-    "base": "python"
-  },
-  "disks": [],
-  "env": {
-    "PYTHONUNBUFFERED": "1",
-    "TZ": "Asia/Tehran"
-  }
-}
-```
+## 🛠 Deployment (Liara)
+Deployment to Liara is handled via the GitHub Actions workflow defined in `.github/workflows/liara.yaml`. This workflow automates the deployment process upon pushes to the `main` branch.
+The necessary configurations (app name, port, API token) are managed within the workflow file and GitHub secrets.
+
+The `liara.json` file is no longer used.
 
 ---
 
-## ❤️ توسعه داده شده توسط MovtiGroup با FastAPI
+## ❤️ Developed by MovtiGroup with FastAPI
 
 ---
 
-## 📜 مجوز
+## 📜 License
 ```text
 MIT License © 2025 MOVTIGROUP
 ```

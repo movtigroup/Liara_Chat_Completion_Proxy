@@ -3,15 +3,27 @@ version: '3.9'
 services:
   ai-proxy:
     build: .
-    image: ai-proxy:latest
+    image: ai-proxy:latest # Ensures a consistent image name if not pulling from a registry for compose
     container_name: ai-proxy
     restart: unless-stopped
     ports:
       - "8100:8100"
     volumes:
       - ./logs:/app/logs
-      - ./static:/app/static
+      # Static files are part of the image, no need to mount if not developing on them live
+      # - ./static:/app/static
     environment:
       - PYTHONUNBUFFERED=1
       - TZ=Asia/Tehran
-      - UVICORN_WORKERS=2 # Default for compose, can be overridden
+      - UVICORN_WORKERS=2 # Default for compose, can be overridden by Dockerfile CMD's default or other env settings
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: '500M' # Using M for Megabytes as per Docker convention
+    networks:
+      - proxy-net
+
+networks:
+  proxy-net:
+    driver: bridge
