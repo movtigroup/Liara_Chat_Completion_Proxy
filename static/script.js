@@ -105,4 +105,22 @@ document.addEventListener('DOMContentLoaded', () => {
       sendBtn.click();
     }
   });
+
+  // Copy to clipboard for code blocks
+  $('.copy-btn').on('click', function() {
+    const codeBlock = $(this).siblings('pre').find('code');
+    const textToCopy = codeBlock.text();
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      const originalText = $(this).text();
+      $(this).text('کپی شد!');
+      setTimeout(() => {
+        $(this).text(originalText);
+      }, 2000);
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+      alert('خطا در کپی متن.');
+    });
+  });
+
 });

@@ -4,50 +4,93 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Proxy API</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'vazir': ['Vazirmatn', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer base {
+            body {
+                font-family: theme('fontFamily.vazir');
+            }
+        }
+        /* Additional global styles if needed, or component styles */
+    </style>
 </head>
-<body>
-    <div class="container">
-        <header>
-            <h1>پروکسی پیشرفته مدل‌های هوش مصنوعی</h1>
-            <p>پشتیبانی از مدل‌های GPT-4o-mini, Gemini Flash, Claude 3.5, و دیگر مدل‌ها</p>
-        </header>
-        
-        <section class="models">
-            <h2>مدل‌های پشتیبانی شده</h2>
-            <div class="model-grid">
-                <div class="model-card">
-                    <h3>OpenAI: GPT-4o-mini</h3>
-                    <ul>
-                        <li>Structured outputs</li>
-                        <li>Function calling</li>
-                        <li>Streaming</li>
-                    </ul>
-                </div>
-                
-                <div class="model-card">
-                    <h3>Google: Gemini 2.0 Flash</h3>
-                    <ul>
-                        <li>Structured outputs</li>
-                        <li>Function calling</li>
-                        <li>Streaming</li>
-                    </ul>
-                </div>
-                
-                <div class="model-card">
-                    <h3>Anthropic: Claude 3.5</h3>
-                    <ul>
-                        <li>Structured outputs</li>
-                        <li>Function calling</li>
-                        <li>Streaming</li>
-                    </ul>
-                </div>
+<body class="bg-gray-900 text-gray-100 font-vazir">
+
+    <header class="bg-gray-800 text-white p-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3 rtl:space-x-reverse">
+                <span class="text-2xl font-bold">[MovtiGroup Logo]</span>
+                <h1 class="text-2xl font-semibold">پروکسی هوش مصنوعی لیارا</h1>
             </div>
-        </section>
-        
-        <section class="usage">
-            <h2>نمونه درخواست</h2>
-            <pre><code>POST /api/v1/chat/completions
+            <!-- Navigation can go here if needed -->
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 mt-4 mb-4">
+        <div class="space-y-16"> <!-- Added space-y for separation between major sections -->
+            <header class="text-center py-10 md:py-16"> <!-- Adjusted padding -->
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 tracking-tight">پروکسی پیشرفته مدل‌های هوش مصنوعی</h1>
+                <p class="text-lg sm:text-xl text-gray-400 max-w-3xl mx-auto">
+                    دسترسی یکپارچه و بهینه به مدل‌های پیشرو مانند GPT-4o-mini، Gemini 2.0 Flash، Claude 3.5 Sonnet و سایر مدل‌ها با قابلیت‌های حرفه‌ای.
+                </p>
+            </header>
+
+            <section id="models" class="py-10 md:py-16">
+                <h2 class="text-3xl sm:text-4xl font-semibold text-center mb-12">مدل‌های کلیدی پشتیبانی شده</h2>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Model Card 1: OpenAI -->
+                    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl hover:ring-2 hover:ring-sky-500 transition-all duration-300 ease-in-out transform hover:-translate-y-1">
+                        <h3 class="text-2xl font-semibold mb-4 text-sky-400">OpenAI: GPT-4o-mini</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-300">
+                            <li>خروجی ساختاریافته (JSON mode)</li>
+                            <li>فراخوانی تابع (Function calling)</li>
+                            <li>پاسخ‌های جریانی (Streaming)</li>
+                        </ul>
+                    </div>
+
+                    <!-- Model Card 2: Google -->
+                    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl hover:ring-2 hover:ring-green-500 transition-all duration-300 ease-in-out transform hover:-translate-y-1">
+                        <h3 class="text-2xl font-semibold mb-4 text-green-400">Google: Gemini 2.0 Flash</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-300">
+                            <li>خروجی ساختاریافته</li>
+                            <li>فراخوانی تابع</li>
+                            <li>پاسخ‌های جریانی</li>
+                        </ul>
+                    </div>
+
+                    <!-- Model Card 3: Anthropic -->
+                    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl hover:ring-2 hover:ring-purple-500 transition-all duration-300 ease-in-out transform hover:-translate-y-1">
+                        <h3 class="text-2xl font-semibold mb-4 text-purple-400">Anthropic: Claude 3.5 Sonnet</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-300">
+                            <li>خروجی ساختاریافته</li>
+                            <li>فراخوانی تابع</li>
+                            <li>پاسخ‌های جریانی</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="usage" class="py-10 md:py-16">
+                <h2 class="text-3xl sm:text-4xl font-semibold text-center mb-12">نحوه استفاده و نمونه کدها</h2>
+                <div class="max-w-4xl mx-auto space-y-10">
+                    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xl sm:text-2xl font-semibold text-amber-400">نمونه درخواست HTTP (POST)</h3>
+                            <button class="copy-btn bg-gray-700 hover:bg-gray-600 text-gray-300 py-1 px-3 rounded-md text-sm transition-colors">کپی</button>
+                        </div>
+                        <pre class="bg-gray-700 text-gray-200 p-4 rounded-md overflow-x-auto custom-scrollbar"><code class="language-json text-sm block whitespace-pre-wrap">POST /api/v1/chat/completions
 Authorization: Bearer YOUR_API_KEY
 
 {
@@ -58,56 +101,101 @@ Authorization: Bearer YOUR_API_KEY
   "temperature": 0.7,
   "max_tokens": 500
 }</code></pre>
-            
-            <h3>WebSocket (برای استریمینگ):</h3>
-            <pre><code>const ws = new WebSocket('ws://YOUR_DOMAIN/ws/v1/chat/completions');
+                    </div>
+                    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xl sm:text-2xl font-semibold text-teal-400">نمونه WebSocket (JavaScript)</h3>
+                            <button class="copy-btn bg-gray-700 hover:bg-gray-600 text-gray-300 py-1 px-3 rounded-md text-sm transition-colors">کپی</button>
+                        </div>
+                        <pre class="bg-gray-700 text-gray-200 p-4 rounded-md overflow-x-auto custom-scrollbar"><code class="language-javascript text-sm block whitespace-pre-wrap">const ws = new WebSocket('ws://YOUR_DOMAIN/ws/v1/chat/completions');
 
 ws.onopen = () => {
+  // First, send API Key for authentication
   ws.send(JSON.stringify({
-    api_key: "YOUR_API_KEY"
+    api_key: "Bearer YOUR_API_KEY" // Ensure Bearer prefix
   }));
   
+  // Then, send chat configuration
   ws.send(JSON.stringify({
     model: "openai/gpt-4o-mini",
-    messages: [{role: "user", content: "سلام"}],
-    stream: true
+    messages: [{role: "user", "content": "سلام"}],
+    stream: true // stream is implicitly true for WebSockets with this proxy
   }));
 };
 
 ws.onmessage = (event) => {
-  console.log(JSON.parse(event.data));
+  const data = JSON.parse(event.data);
+  console.log(data);
+  // Handle streamed chunks or final error messages
+};
+
+ws.onerror = (error) => {
+  console.error("WebSocket Error:", error);
+};
+
+ws.onclose = (event) => {
+  console.log("WebSocket closed:", event.code, event.reason);
 };</code></pre>
-        </section>
-        
-        <!-- WebSocket Test Section -->
-        <section class="websocket-test">
-            <h2>تست WebSocket</h2>
-            <div class="ws-controls">
-                <div>
-                    <label for="api-key">کلید API:</label>
-                    <input type="text" id="api-key" placeholder="API Key را وارد کنید">
+                    </div>
                 </div>
-                <div>
-                    <button id="ws-connect">اتصال</button>
-                    <button id="ws-disconnect">قطع ارتباط</button>
-                    <span id="ws-status" class="status-disconnected">قطع ارتباط</span>
-                </div>
-            </div>
+            </section>
             
-            <div class="ws-chat">
-                <div id="ws-response" class="ws-messages"></div>
-                <div class="ws-input">
-                    <input type="text" id="message-input" placeholder="پیام خود را بنویسید...">
-                    <button id="send-btn">ارسال</button>
+            <!-- WebSocket Test Section -->
+            <section id="websocket-test" class="py-10 md:py-16 bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 my-12">
+                <h2 class="text-3xl sm:text-4xl font-semibold text-center mb-10 text-rose-400">تست WebSocket تعاملی</h2>
+                <div class="max-w-3xl mx-auto space-y-6">
+                    <div>
+                        <label for="api-key" class="block mb-2 text-sm font-medium text-gray-300">کلید API (شامل Bearer):</label>
+                        <input type="text" id="api-key" class="bg-gray-700 border border-gray-600 text-gray-200 text-sm rounded-lg focus:ring-rose-500 focus:border-rose-500 block w-full p-3 placeholder-gray-500" placeholder="Bearer YOUR_API_KEY">
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button id="ws-connect" class="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-150 ease-in-out transform active:scale-95">اتصال</button>
+                        <button id="ws-disconnect" class="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-150 ease-in-out transform active:scale-95" disabled>قطع ارتباط</button>
+                    </div>
+                    <div>
+                         <span id="ws-status" class="block text-center text-sm p-3 rounded-md bg-gray-700 text-gray-400 transition-all duration-300">وضعیت: قطع</span>
+                    </div>
+
+                    <div class="mt-6 space-y-4">
+                        <div id="ws-response" class="h-72 overflow-y-auto bg-gray-700 p-4 rounded-lg border border-gray-600 text-sm custom-scrollbar">
+                            <p class="text-gray-500">پاسخ‌ها اینجا نمایش داده می‌شوند...</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <input type="text" id="message-input" class="flex-grow bg-gray-700 border border-gray-600 text-gray-200 text-sm rounded-lg focus:ring-rose-500 focus:border-rose-500 block w-full p-3 placeholder-gray-500" placeholder="پیام خود را بنویسید..." disabled>
+                            <button id="send-btn" class="bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-semibold py-2.5 px-5 rounded-lg transition-all duration-150 ease-in-out transform active:scale-95" disabled>ارسال</button>
+                        </div>
+                    </div>
                 </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-gray-300 p-6 text-center mt-12">
+        <div class="container mx-auto">
+            <div class="flex justify-center space-x-6 rtl:space-x-reverse mb-4">
+                <a href="https://github.com/movtigroup" target="_blank" rel="noopener noreferrer" class="hover:text-white hover:underline">GitHub Profile</a>
+                <a href="https://github.com/movtigroup/Liara_Chat_Completion_Proxy" target="_blank" rel="noopener noreferrer" class="hover:text-white hover:underline">Project Repository</a>
+                <a href="https://ble.ir/chatqpt" target="_blank" rel="noopener noreferrer" class="hover:text-white hover:underline">Bale Channel</a>
+                <a href="https://daramet.com/tahatehran" target="_blank" rel="noopener noreferrer" class="hover:text-white hover:underline">Support/Donate</a>
             </div>
-        </section>
-        
-        <footer>
-            <p>© 2024 AI Proxy API | نسخه 2.0</p>
-        </footer>
-    </div>
+            <p id="copyright-info" class="text-sm">
+                <!-- Copyright text will be inserted by JavaScript -->
+            </p>
+        </div>
+    </footer>
     
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"></script>
+    <script>
+        // Dynamically set copyright year
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentYear = new Date().getFullYear();
+            const copyrightText = `© ${currentYear} MovtiGroup. Designed by Taha Tehrani Nasab - <a href="http://ththt.ir" target="_blank" rel="noopener noreferrer" class="hover:text-white hover:underline">ththt.ir</a>`;
+            const copyrightElement = document.getElementById('copyright-info');
+            if (copyrightElement) {
+                copyrightElement.innerHTML = copyrightText;
+            }
+        });
+    </script>
     <script src="/static/script.js"></script>
 </body>
 </html>

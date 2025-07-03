@@ -163,7 +163,15 @@ app.add_middleware(LoggingMiddleware)
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    logger.warning(f"HTTPException: {exc.detail}")
+    logger.warning(f"HTTPException towards client: {exc.status_code} - {exc.detail} for {request.url}")
+    if exc.status_code == 404:
+        try:
+            with open("static/404.html", "r") as f:
+                content = f.read()
+            return HTMLResponse(content=content, status_code=404)
+        except FileNotFoundError:
+            logger.error("static/404.html not found, serving default JSON 404.")
+            return JSONResponse(status_code=404, content={"detail": "Not Found (custom 404 page missing)"})
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 @app.get("/", include_in_schema=False)
