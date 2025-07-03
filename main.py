@@ -302,10 +302,11 @@ async def _handle_websocket_chat(websocket: WebSocket, raw_api_key: str, tier_fo
 @ws_router_v1.websocket("/chat/completions")
 async def ws_v1_chat_completions(websocket: WebSocket):
     raw_api_key_from_ws = ""
+    await websocket.accept() # Accept the connection first
     try:
         auth_data = await websocket.receive_json()
         api_key_header_sim = auth_data.get("api_key")
-        if not api_key_header_sim: await websocket.send_json({"error": "API key is required as first message: {\"api_key\": \"Bearer <YOUR_KEY>\"}"}); await websocket.close(); return
+        if not api_key_header_sim: await websocket.send_json({"error": "API key is required as first message: {\"api_key\": \"Bearer <YOUR_KEY>\"}"}); await websocket.close(code=4001); return # Use custom close code
         if not api_key_header_sim.startswith("Bearer "): await websocket.send_json({"error": "Invalid API Key format. Expected Bearer token."}); await websocket.close(); return
         raw_api_key_from_ws = api_key_header_sim.replace("Bearer ", "").strip()
         if not raw_api_key_from_ws: await websocket.send_json({"error": "API Key is empty."}); await websocket.close(); return
@@ -326,10 +327,11 @@ async def ws_v1_chat_completions(websocket: WebSocket):
 @ws_router_v2.websocket("/chat/completions")
 async def ws_v2_chat_completions(websocket: WebSocket):
     raw_api_key_from_ws = ""
+    await websocket.accept() # Accept the connection first
     try:
         auth_data = await websocket.receive_json()
         api_key_header_sim = auth_data.get("api_key")
-        if not api_key_header_sim: await websocket.send_json({"error": "API key is required as first message: {\"api_key\": \"Bearer <YOUR_KEY>\"}"}); await websocket.close(); return
+        if not api_key_header_sim: await websocket.send_json({"error": "API key is required as first message: {\"api_key\": \"Bearer <YOUR_KEY>\"}"}); await websocket.close(code=4001); return # Use custom close code
         if not api_key_header_sim.startswith("Bearer "): await websocket.send_json({"error": "Invalid API Key format. Expected Bearer token."}); await websocket.close(); return
         raw_api_key_from_ws = api_key_header_sim.replace("Bearer ", "").strip()
         if not raw_api_key_from_ws: await websocket.send_json({"error": "API Key is empty."}); await websocket.close(); return

@@ -197,18 +197,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Copy to clipboard for code blocks
   $('.copy-btn').on('click', function() {
+    console.log("Copy button clicked", this);
     const codeBlock = $(this).siblings('pre').find('code');
+    console.log("Found code block element:", codeBlock.get(0)); // Log the DOM element
+
+    if (codeBlock.length === 0) {
+        console.error("Could not find code block for button:", this);
+        alert('خطا: بلوک کد برای کپی یافت نشد.');
+        return;
+    }
+
     const textToCopy = codeBlock.text();
+    console.log("Text to copy:", textToCopy);
+
+    if (!textToCopy.trim()) {
+        console.warn("Attempting to copy empty or whitespace-only text.");
+        // Optionally alert the user or just do nothing
+        // alert('محتوایی برای کپی وجود ندارد.');
+        // return;
+    }
 
     navigator.clipboard.writeText(textToCopy).then(() => {
       const originalText = $(this).text();
       $(this).text('کپی شد!');
+      console.log('Text copied successfully!');
       setTimeout(() => {
         $(this).text(originalText);
       }, 2000);
     }).catch(err => {
       console.error('Failed to copy text: ', err);
-      alert('خطا در کپی متن.');
+      alert('خطا در کپی متن. ممکن است نیاز به مجوز دسترسی به کلیپ‌بورد باشد یا در محیط ناامن (غیر HTTPS) اجرا شده باشد.');
     });
   });
 
