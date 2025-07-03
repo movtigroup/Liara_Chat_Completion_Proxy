@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دسترسی ممنوع (403)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'vazir': ['Vazirmatn', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer base {
+            body {
+                font-family: theme('fontFamily.vazir');
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-vazir flex flex-col items-center justify-center min-h-screen p-6">
+    <div class="text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-6 h-24 w-24 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636M12 18.75a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H12.75a.75.75 0 01-.75-.75V18.75zM12 12.75a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H12.75a.75.75 0 01-.75-.75V12.75zM12 6.75a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H12.75a.75.75 0 01-.75-.75V6.75z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v.01M12 6l-.01 6.01M12 12.01l.01 6M12 18.01V21" />
+             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9a3 3 0 100-6 3 3 0 000 6zM12 15a3 3 0 100-6 3 3 0 000 6z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /> <!-- Simple X -->
+             <path stroke-linecap="round" stroke-linejoin="round" d="M12 15.75a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75h-.008a.75.75 0 01-.75-.75v-.008a.75.75 0 01.75-.75z M12 9.75A.75.75 0 0112.75 9h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75h-.008A.75.75 0 0112 9.75v-.008z" /> <!-- dots -->
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75V17.25" /> <!-- vertical line -->
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+        </svg>
+        <h1 class="text-6xl font-bold text-red-500 mb-4">403</h1>
+        <h2 class="text-3xl sm:text-4xl font-semibold text-gray-200 mb-6">دسترسی ممنوع</h2>
+        <p class="text-lg text-gray-400 mb-8 max-w-md">
+            متاسفانه شما مجوز دسترسی به این صفحه یا منبع را ندارید. لطفا با پشتیبانی تماس بگیرید اگر فکر می‌کنید این یک خطا است.
+        </p>
+        <a href="/" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg text-lg transition-all duration-150 ease-in-out transform hover:scale-105">
+            بازگشت به صفحه اصلی
+        </a>
+    </div>
+
+    <footer class="absolute bottom-6 text-gray-500 text-sm">
+        <p id="copyright-info-403">© <span id="year-403"></span> MovtiGroup. Designed by Taha Tehrani Nasab - <a href="http://ththt.ir" target="_blank" rel="noopener noreferrer" class="hover:text-gray-300 underline">ththt.ir</a></p>
+    </footer>
+    <script>
+        document.getElementById('year-403').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>
