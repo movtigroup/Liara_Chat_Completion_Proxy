@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>خطای داخلی سرور (500)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'vazir': ['Vazirmatn', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer base {
+            body {
+                font-family: theme('fontFamily.vazir');
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-vazir flex flex-col items-center justify-center min-h-screen p-6">
+    <div class="text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-6 h-24 w-24 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+        </svg>
+        <h1 class="text-6xl font-bold text-orange-500 mb-4">500</h1>
+        <h2 class="text-3xl sm:text-4xl font-semibold text-gray-200 mb-6">خطای داخلی سرور</h2>
+        <p class="text-lg text-gray-400 mb-8 max-w-md">
+            متاسفانه یک مشکل غیرمنتظره در سرور رخ داده است. تیم ما از این موضوع مطلع شده است. لطفا کمی بعد دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.
+        </p>
+        <a href="/" class="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-6 rounded-lg text-lg transition-all duration-150 ease-in-out transform hover:scale-105">
+            بازگشت به صفحه اصلی
+        </a>
+    </div>
+
+    <footer class="absolute bottom-6 text-gray-500 text-sm">
+        <p id="copyright-info-500">© <span id="year-500"></span> MovtiGroup. Designed by Taha Tehrani Nasab - <a href="http://ththt.ir" target="_blank" rel="noopener noreferrer" class="hover:text-gray-300 underline">ththt.ir</a></p>
+    </footer>
+    <script>
+        document.getElementById('year-500').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>

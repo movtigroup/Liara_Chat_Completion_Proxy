@@ -164,15 +164,37 @@ app.add_middleware(LoggingMiddleware)
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     logger.warning(f"HTTPException towards client: {exc.status_code} - {exc.detail} for {request.url}")
+
+    accept_header = request.headers.get("accept", "")
+    prefer_json = "application/json" in accept_header.lower() or not accept_header or accept_header == "*/*"
+
+    custom_page_path = None
     if exc.status_code == 404:
+        custom_page_path = "static/404.html"
+    elif exc.status_code == 403:
+        custom_page_path = "static/403.html"
+
+    if custom_page_path and not prefer_json: # Serve HTML only if JSON is not preferred
         try:
-            with open("static/404.html", "r") as f:
+            with open(custom_page_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            return HTMLResponse(content=content, status_code=404)
+            return HTMLResponse(content=content, status_code=exc.status_code)
         except FileNotFoundError:
-            logger.error("static/404.html not found, serving default JSON 404.")
-            return JSONResponse(status_code=404, content={"detail": "Not Found (custom 404 page missing)"})
+            logger.error(f"{custom_page_path} not found, serving default JSON response for {exc.status_code} as fallback.")
+            # Fall through to JSONResponse below
+
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled generic exception: {exc} for path {request.url}", exc_info=True)
+    try:
+        with open("static/500.html", "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content=content, status_code=500)
+    except FileNotFoundError:
+        logger.error("static/500.html not found, serving default JSON 500.")
+        return JSONResponse(status_code=500, content={"detail": "Internal Server Error (custom 500 page missing)"})
 
 @app.get("/", include_in_schema=False)
 async def serve_documentation():
