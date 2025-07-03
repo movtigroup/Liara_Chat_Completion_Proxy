@@ -11,3 +11,4 @@ ruff==0.4.4 # Added for linting and formatting
 pytest==8.2.0 # Added for unit testing
 pytest-asyncio==0.23.7 # For testing async code with pytest
 pytest-mock==3.14.0 # For mocker fixture
+psutil==5.9.8 # For system resource monitoring
