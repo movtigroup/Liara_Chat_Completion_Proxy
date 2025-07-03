@@ -22,6 +22,7 @@ from link import LIARA_BASE_URLS
 from schemas import CompletionRequest
 from utils import generate_cache_key, get_headers
 from errors import (
+    UpstreamServiceError, # Added
     UpstreamServiceDownError,
     UpstreamTimeoutError,
     UpstreamResponseError,
@@ -193,14 +194,14 @@ async def _handle_chat_completions_request(api_key_details: APIKeyDetails, body:
                     return JSONResponse(content=response_data, status_code=200)
                 else:
                     logger.warning(f"Upstream service at {url} returned error: {response.status_code} - {response.text}")
-                    last_exception = UpstreamResponseError(response.status_code, response.text)
+                    last_exception = UpstreamResponseError(upstream_status_code=response.status_code, upstream_detail=response.text)
                     continue
         except httpx.TimeoutException as e:
             logger.warning(f"Request to upstream service at {url} timed out: {str(e)}"); last_exception = UpstreamTimeoutError(); continue
         except httpx.ConnectError as e:
             logger.warning(f"Could not connect to upstream service at {url}: {str(e)}"); last_exception = UpstreamServiceDownError(f"Could not connect to AI service endpoint: {url}. It may be temporarily down."); continue
         except httpx.HTTPStatusError as e:
-            logger.error(f"HTTPStatusError from upstream service {url}: {e.response.status_code} - {e.response.text}"); last_exception = UpstreamResponseError(e.response.status_code, e.response.text); continue
+            logger.error(f"HTTPStatusError from upstream service {url}: {e.response.status_code} - {e.response.text}"); last_exception = UpstreamResponseError(upstream_status_code=e.response.status_code, upstream_detail=e.response.text); continue
         except Exception as e:
             logger.error(f"Unexpected error connecting to upstream service {url}: {str(e)}", exc_info=True); last_exception = GeneralProxyError(f"An unexpected error occurred while contacting AI service: {url}."); continue
     if last_exception: raise last_exception
@@ -239,7 +240,7 @@ async def _handle_websocket_chat(websocket: WebSocket, raw_api_key: str, tier_fo
                                 if chunk.strip(): await manager.send_message(connection_id, chunk)
                             success = True; break
                         else:
-                            err_text = await response.aread(); err = UpstreamResponseError(response.status_code, err_text.decode(errors='ignore'))
+                            err_text = await response.aread(); err = UpstreamResponseError(upstream_status_code=response.status_code, upstream_detail=err_text.decode(errors='ignore'))
                             logger.warning(f"WS: Upstream service at {url.split('/')[2]} returned error: {response.status_code} - {err.detail}"); last_error_payload = {"error": err.detail}; continue
             except httpx.TimeoutException as e: err = UpstreamTimeoutError(); logger.warning(f"WS: Request to AI service at {url.split('/')[2]} timed out: {str(e)}"); last_error_payload = {"error": err.detail}; continue
             except httpx.ConnectError as e: err = UpstreamServiceDownError(f"Could not connect to AI service endpoint: {url.split('/')[2]}. It may be temporarily down."); logger.warning(f"WS: Could not connect to AI service at {url.split('/')[2]}: {str(e)}"); last_error_payload = {"error": err.detail}; continue
@@ -247,7 +248,7 @@ async def _handle_websocket_chat(websocket: WebSocket, raw_api_key: str, tier_fo
                 err = GeneralProxyError(f"An unexpected problem occurred while streaming from AI service: {url.split('/')[2]}.")
                 logger.error(f"WS: Unexpected error with AI service at {url.split('/')[2]} during stream: {str(e)}", exc_info=True)
                 current_error_detail = getattr(e, 'detail', str(e))
-                if isinstance(e, UpstreamResponseError) and hasattr(e, 'upstream_error_message') and e.upstream_error_message: current_error_detail = e.upstream_error_message
+                if isinstance(e, UpstreamServiceError) and hasattr(e, 'detail') and e.detail: current_error_detail = e.detail
                 last_error_payload = {"error": current_error_detail}
                 try: await websocket.send_json(last_error_payload)
                 except Exception as send_exc: logger.error(f"WS: Failed to send error to client {connection_id}: {send_exc}")

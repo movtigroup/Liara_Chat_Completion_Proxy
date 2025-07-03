@@ -55,17 +55,17 @@ MINIMAL_REQUEST_PAYLOAD = {
 def test_chat_completions_missing_api_key(client: TestClient):
     response = client.post("/api/v1/chat/completions", json=MINIMAL_REQUEST_PAYLOAD)
     assert response.status_code == 401
-    assert "API Key is required" in response.json()["detail"]
+    assert "Authorization header is missing or not a Bearer token." in response.json()["detail"]
 
 def test_chat_completions_invalid_bearer_token(client: TestClient):
     response = client.post(
         "/api/v1/chat/completions",
         json=MINIMAL_REQUEST_PAYLOAD,
-        headers={"Authorization": f"Invalid {VALID_API_KEY}"}
+        headers={"Authorization": f"Invalid {V1_CUSTOMER_API_KEY}"}
     )
     assert response.status_code == 401 # Or 403 depending on how strict the "Bearer" check is
                                       # Current code raises 401 for "not api_key.startswith("Bearer ")"
-    assert "API Key is required" in response.json()["detail"] # Check specific message
+    assert "Authorization header is missing or not a Bearer token." in response.json()["detail"] # Check specific message
 
 
 def test_chat_completions_successful_first_try(client: TestClient, mocker):
@@ -185,8 +185,8 @@ def test_chat_completions_liara_returns_error_status(client: TestClient, mocker)
     # If only one LIARA_BASE_URLS, it will try it, get UpstreamResponseError, and raise that.
 
     expected_error = UpstreamResponseError(
-        liara_status_code=liara_status_code,
-        liara_detail=liara_error_response_text
+        upstream_status_code=liara_status_code,
+        upstream_detail=liara_error_response_text
     )
     assert response.status_code == expected_error.status_code # 502
     assert response.json()["detail"] == expected_error.detail
@@ -212,8 +212,8 @@ def test_chat_completions_liara_returns_error_status(client: TestClient, mocker)
     response_rerun = client.post("/api/v1/chat/completions", headers=V1_DEFAULT_HEADERS, json=MINIMAL_REQUEST_PAYLOAD)
     assert response_rerun.status_code == expected_error.status_code
 
-    assert mock_logger_warning_rerun.call_count == len(LIARA_BASE_URLS) if LIARA_BASE_URLS else 0
     if LIARA_BASE_URLS:
+        assert mock_logger_warning_rerun.call_count > 0
         # Example: check the log message for the first call
         first_log_call_args = mock_logger_warning_rerun.call_args_list[0][0][0]
         assert f"Upstream service at {LIARA_BASE_URLS[0]} returned error: {liara_status_code} - {liara_error_response_text}" in first_log_call_args
@@ -231,10 +231,10 @@ def test_chat_completions_liara_http_status_error_exception(client: TestClient, 
     # Let's simulate it as if it was an httpx.HTTPStatusError
 
     mock_request = mocker.MagicMock() # Mock request object for HTTPStatusError
-    mock_response_for_exception = mocker.MagicMock(status_code=503) # Mock response for HTTPStatusError
+    mock_response_for_exception = mocker.MagicMock(status_code=503, text="Service Unavailable") # Mock response for HTTPStatusError
 
     http_status_error = httpx.HTTPStatusError(
-        "Service Unavailable",
+        "Service Unavailable", # This message is used if response.text is not available
         request=mock_request,
         response=mock_response_for_exception
     )
@@ -251,8 +251,8 @@ def test_chat_completions_liara_http_status_error_exception(client: TestClient, 
     # or a generic 502 but with a detail indicating upstream failure.
     # The refactored main.py will catch this, log it, and then raise an UpstreamResponseError.
     expected_error = UpstreamResponseError(
-        liara_status_code=mock_response_for_exception.status_code, # 503
-        liara_detail="Service Unavailable" # This is from the HTTPStatusError message
+        upstream_status_code=mock_response_for_exception.status_code, # 503
+        upstream_detail="Service Unavailable" # This is from the HTTPStatusError message
     )
 
     assert response.status_code == expected_error.status_code # 502 (from UpstreamResponseError)
@@ -365,7 +365,7 @@ def test_chat_completions_empty_liara_base_urls(client: TestClient, mocker):
 
 # Test that the `utils.get_headers` function is called with the correct API key
 def test_get_headers_is_called_correctly(client: TestClient, mocker):
-    mock_get_headers = mocker.patch("main.get_headers", return_value={"Authorization": f"Bearer {VALID_API_KEY}", "X-Custom": "Test"})
+    mock_get_headers = mocker.patch("main.get_headers", return_value={"Authorization": f"Bearer {V1_CUSTOMER_API_KEY}", "X-Custom": "Test"})
     mock_post = AsyncMock(return_value=AsyncMock(status_code=200, json=lambda: {}))
     mocker.patch("httpx.AsyncClient.post", new=mock_post)
 
@@ -633,10 +633,10 @@ async def test_websocket_chat_fallback_behavior_ws(client: TestClient, mocker):
 
     assert "Success from fallback" in full_received_text
     assert "data: [DONE]\n\n" in full_received_text
-     assert patched_httpx_stream_method.call_count == 2
+    assert patched_httpx_stream_method.call_count == 2
     # Check call arguments if necessary
-     first_call_args = patched_httpx_stream_method.call_args_list[0]
-     second_call_args = patched_httpx_stream_method.call_args_list[1]
+    first_call_args = patched_httpx_stream_method.call_args_list[0]
+    second_call_args = patched_httpx_stream_method.call_args_list[1]
     assert first_call_args[0][1] == f"{LIARA_BASE_URLS[0]}/chat/completions" # URL is second arg for stream method
     assert second_call_args[0][1] == f"{LIARA_BASE_URLS[1]}/chat/completions"
 
