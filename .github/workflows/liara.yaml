@@ -1,0 +1,21 @@
+name: CD-Liara
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60 # Set the job timeout to 1 hour
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "22"
+      - name: update-liara
+        env:
+          LIARA_TOKEN: ${{ secrets.LIARA_API_TOKEN }}
+        run: |
+          npm i -g @liara/cli@7
+          liara deploy --app="liara-proxy" --api-token="$LIARA_TOKEN" --no-app-logs --port=8100
