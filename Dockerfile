@@ -24,6 +24,7 @@ WORKDIR /app
 # Create a non-root user and group
 RUN groupadd -r appgroup && useradd --no-log-init -r -g appgroup -d /home/appuser -s /sbin/nologin appuser && \
     mkdir -p /home/appuser/.local && chown -R appuser:appgroup /home/appuser && \
+    touch /app/.env && \
     mkdir -p /app/logs && chown -R appuser:appgroup /app && \
     mkdir -p /app/static # Static files will be copied and owned by appuser later
 
