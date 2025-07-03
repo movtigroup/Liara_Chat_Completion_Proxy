@@ -23,10 +23,11 @@
 - 🔄 WebSocket API for real-time streaming
 - 💾 Advanced caching system for faster responses
 - ⚙️ Rate limiting (default: 100 requests per minute for v1, 1000 for v2 - now dynamic)
-- 🖥️ HTML/CSS/JS user interface for testing and documentation
+- 🖥️ Modern HTML/CSS/JS user interface (Tailwind CSS, jQuery) with an interactive WebSocket tester
+- 📄 User-friendly custom HTML error pages (403, 404, 500) for browser clients
 - 🐳 Full Docker support
-- 📊 Professional logging with Loguru
-- 🛡️ Advanced error management
+- 📊 Professional logging with Loguru (outputs to stderr)
+- 🛡️ Advanced error management with content negotiation (JSON for API clients, HTML for browsers)
 - 🔄 Support for multiple Liara servers with Fallback capability
 
 ---
@@ -178,9 +179,11 @@ asyncio.run(chat_stream())
 ├── requirements.txt
 ├── schemas.py
 ├── static/
+│   ├── 403.html          # Custom 403 Forbidden page
+│   ├── 404.html          # Custom 404 Not Found page
+│   ├── 500.html          # Custom 500 Internal Server Error page
 │   ├── index.html
 │   ├── script.js
-│   └── style.css
 ├── tests/
 └── utils.py
 ```
