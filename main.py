@@ -115,13 +115,15 @@ ws_router_v2 = APIRouter(prefix="/ws/v2")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-os.makedirs("logs", exist_ok=True)
-logger.add(
-    "logs/app.log", rotation="10 MB", retention="10 days", level="DEBUG",
-    enqueue=True, backtrace=True, diagnose=True,
-)
+# os.makedirs("logs", exist_ok=True) # Disabled due to read-only filesystem issues
+# logger.add(
+#     "logs/app.log", rotation="10 MB", retention="10 days", level="DEBUG",
+#     enqueue=True, backtrace=True, diagnose=True,
+# ) # Disabled due to read-only filesystem issues
+
+# Configure logger to only use stderr
 logger.configure(handlers=[
-    {"sink": "logs/app.log", "level": "DEBUG"}, {"sink": "stderr", "level": "INFO"},
+    {"sink": "stderr", "level": "INFO"},
 ])
 
 cache = cachetools.TTLCache(maxsize=get_sync_initial_cache_maxsize(), ttl=300)
