@@ -1858,3 +1858,251 @@ NameError: name 'UpstreamServiceError' is not defined
 2025-07-03 04:00:24.003 | INFO     | main:_handle_chat_completions_request:181 - Cache miss for key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
 2025-07-03 04:00:24.003 | WARNING  | main:_handle_chat_completions_request:193 - Upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e returned error: 500 - Internal Server Error from Upstream
 2025-07-03 04:00:24.004 | WARNING  | main:_handle_chat_completions_request:193 - Upstream service at https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4 returned error: 500 - Internal Server Error from Upstream
+2025-07-03 12:15:19.088 | INFO     | main:<module>:131 - Cache initialized with maxsize: 2000
+2025-07-03 12:15:19.240 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:15:19.242 | WARNING  | main:http_exception_handler:165 - HTTPException: Authorization header is missing or not a Bearer token.
+2025-07-03 12:15:19.242 | INFO     | main:dispatch:159 - Response: 401 (1.72ms)
+2025-07-03 12:15:19.337 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:15:19.440 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:15:19.481 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:15:19.483 | INFO     | main:dispatch:159 - Response: 200 (145.47ms)
+2025-07-03 12:15:19.489 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:15:19.592 | INFO     | main:_handle_chat_completions_request:182 - Cache hit for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:15:19.593 | INFO     | main:dispatch:159 - Response: 200 (103.38ms)
+2025-07-03 12:15:19.598 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:15:19.701 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:15:19.741 | WARNING  | main:_handle_chat_completions_request:202 - Could not connect to upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e: Connection failed to first server
+2025-07-03 12:15:19.782 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4 and cached key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:15:19.783 | INFO     | main:dispatch:159 - Response: 200 (184.51ms)
+2025-07-03 12:15:19.790 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:15:19.893 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:15:19.933 | WARNING  | main:_handle_chat_completions_request:202 - Could not connect to upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e: Connection failed to server 0
+2025-07-03 12:15:19.974 | WARNING  | main:_handle_chat_completions_request:202 - Could not connect to upstream service at https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4: Connection failed to server 1
+2025-07-03 12:15:19.975 | WARNING  | main:http_exception_handler:165 - HTTPException: Could not connect to AI service endpoint: https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4. It may be temporarily down.
+2025-07-03 12:15:19.975 | INFO     | main:dispatch:159 - Response: 503 (184.83ms)
+2025-07-03 12:15:19.982 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:15:20.085 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:15:20.167 | INFO     | main:dispatch:159 - Response: 502 (185.37ms)
+2025-07-03 12:15:20.193 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:15:20.296 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:15:20.380 | WARNING  | main:http_exception_handler:165 - HTTPException: The AI service returned an unexpected error (status: 503). Details: <MagicMock name='mock.text' id='140133463750176'>
+2025-07-03 12:15:20.381 | INFO     | main:dispatch:159 - Response: 502 (187.34ms)
+2025-07-03 12:15:20.404 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:15:20.508 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 2c5696f9c5c03cd07322959770dddc9429b225a8d3c9a833d4b9abe9488aa9ea
+2025-07-03 12:15:20.548 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 2c5696f9c5c03cd07322959770dddc9429b225a8d3c9a833d4b9abe9488aa9ea
+2025-07-03 12:15:20.550 | INFO     | main:dispatch:159 - Response: 200 (145.18ms)
+2025-07-03 12:15:20.554 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:15:20.556 | INFO     | main:dispatch:159 - Response: 422 (1.61ms)
+2025-07-03 12:15:20.560 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:15:20.561 | INFO     | main:dispatch:159 - Response: 422 (1.03ms)
+2025-07-03 12:15:20.566 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:15:20.668 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:15:20.669 | WARNING  | main:http_exception_handler:165 - HTTPException: All AI service endpoints are currently unavailable or failed.
+2025-07-03 12:15:20.669 | INFO     | main:dispatch:159 - Response: 503 (103.02ms)
+2025-07-03 12:15:20.695 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:15:20.798 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f72744563e5fc0127aa49c09091c464e8ad1bb7f7c2f75a66c4e76213196f16
+2025-07-03 12:15:20.838 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 1f72744563e5fc0127aa49c09091c464e8ad1bb7f7c2f75a66c4e76213196f16
+2025-07-03 12:15:20.840 | INFO     | main:dispatch:159 - Response: 200 (145.30ms)
+2025-07-03 12:15:20.843 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:15:20.946 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 647412a1ee090510aabfeeabb756394c8e5be0854bdb6b4d20c95ff3004a4ce6
+2025-07-03 12:15:20.986 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 647412a1ee090510aabfeeabb756394c8e5be0854bdb6b4d20c95ff3004a4ce6
+2025-07-03 12:15:20.988 | INFO     | main:dispatch:159 - Response: 200 (144.75ms)
+2025-07-03 12:15:21.001 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v2/chat/completions
+2025-07-03 12:15:21.104 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:15:21.144 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:15:21.146 | INFO     | main:dispatch:159 - Response: 200 (144.94ms)
+2025-07-03 12:15:21.150 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:15:21.253 | WARNING  | main:http_exception_handler:165 - HTTPException: This API key is not authorized for v1 (Customer) access.
+2025-07-03 12:15:21.254 | INFO     | main:dispatch:159 - Response: 403 (103.19ms)
+2025-07-03 12:15:21.258 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v2/chat/completions
+2025-07-03 12:15:21.361 | WARNING  | main:http_exception_handler:165 - HTTPException: This API key is not authorized for v2 (Business) access.
+2025-07-03 12:15:21.361 | INFO     | main:dispatch:159 - Response: 403 (103.13ms)
+2025-07-03 12:15:21.366 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:15:21.367 | WARNING  | main:http_exception_handler:165 - HTTPException: Invalid API Key or tier.
+2025-07-03 12:15:21.367 | INFO     | main:dispatch:159 - Response: 403 (1.40ms)
+2025-07-03 12:15:21.419 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:15:21.420 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:15:21.424 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:15:21.425 | WARNING  | main:_handle_chat_completions_request:200 - Request to upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e timed out: Simulated timeout
+2025-07-03 12:15:21.425 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4 and cached key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:15:21.431 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:15:21.432 | WARNING  | main:_handle_chat_completions_request:200 - Request to upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e timed out: Simulated timeout
+2025-07-03 12:15:21.432 | WARNING  | main:_handle_chat_completions_request:200 - Request to upstream service at https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4 timed out: Simulated timeout
+2025-07-03 12:15:21.436 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:15:21.437 | WARNING  | main:_handle_chat_completions_request:202 - Could not connect to upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e: Simulated connect error
+2025-07-03 12:15:21.437 | WARNING  | main:_handle_chat_completions_request:202 - Could not connect to upstream service at https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4: Simulated connect error
+2025-07-03 12:15:21.441 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:15:21.442 | WARNING  | main:_handle_chat_completions_request:196 - Upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e returned error: 500 - Internal Server Error from Upstream
+2025-07-03 12:15:21.442 | WARNING  | main:_handle_chat_completions_request:196 - Upstream service at https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4 returned error: 500 - Internal Server Error from Upstream
+2025-07-03 12:16:16.498 | INFO     | main:<module>:131 - Cache initialized with maxsize: 2000
+2025-07-03 12:16:16.566 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:16.567 | WARNING  | main:http_exception_handler:165 - HTTPException: Authorization header is missing or not a Bearer token.
+2025-07-03 12:16:16.568 | INFO     | main:dispatch:159 - Response: 401 (1.70ms)
+2025-07-03 12:16:16.573 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:16.574 | WARNING  | main:http_exception_handler:165 - HTTPException: Authorization header is missing or not a Bearer token.
+2025-07-03 12:16:16.575 | INFO     | main:dispatch:159 - Response: 401 (1.37ms)
+2025-07-03 12:16:16.654 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:16.757 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:16:16.801 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:16:16.803 | INFO     | main:dispatch:159 - Response: 200 (148.41ms)
+2025-07-03 12:16:16.809 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:16.912 | INFO     | main:_handle_chat_completions_request:182 - Cache hit for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:16:16.912 | INFO     | main:dispatch:159 - Response: 200 (103.36ms)
+2025-07-03 12:16:16.918 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:17.021 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:16:17.060 | WARNING  | main:_handle_chat_completions_request:202 - Could not connect to upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e: Connection failed to first server
+2025-07-03 12:16:17.103 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4 and cached key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:16:17.104 | INFO     | main:dispatch:159 - Response: 200 (186.21ms)
+2025-07-03 12:16:17.111 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:17.214 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:16:17.254 | WARNING  | main:_handle_chat_completions_request:202 - Could not connect to upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e: Connection failed to server 0
+2025-07-03 12:16:17.295 | WARNING  | main:_handle_chat_completions_request:202 - Could not connect to upstream service at https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4: Connection failed to server 1
+2025-07-03 12:16:17.296 | WARNING  | main:http_exception_handler:165 - HTTPException: Could not connect to AI service endpoint: https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4. It may be temporarily down.
+2025-07-03 12:16:17.296 | INFO     | main:dispatch:159 - Response: 503 (184.67ms)
+2025-07-03 12:16:17.302 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:17.405 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:16:17.487 | INFO     | main:dispatch:159 - Response: 502 (184.44ms)
+2025-07-03 12:16:17.494 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:17.597 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:16:17.680 | INFO     | main:dispatch:159 - Response: 502 (185.66ms)
+2025-07-03 12:16:17.708 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:17.811 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:16:17.892 | WARNING  | main:http_exception_handler:165 - HTTPException: The AI service returned an unexpected error (status: 503). Details: <MagicMock name='mock.text' id='140272852751744'>
+2025-07-03 12:16:17.893 | INFO     | main:dispatch:159 - Response: 502 (184.88ms)
+2025-07-03 12:16:17.921 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:18.024 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 2c5696f9c5c03cd07322959770dddc9429b225a8d3c9a833d4b9abe9488aa9ea
+2025-07-03 12:16:18.063 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 2c5696f9c5c03cd07322959770dddc9429b225a8d3c9a833d4b9abe9488aa9ea
+2025-07-03 12:16:18.065 | INFO     | main:dispatch:159 - Response: 200 (143.58ms)
+2025-07-03 12:16:18.070 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:18.072 | INFO     | main:dispatch:159 - Response: 422 (1.64ms)
+2025-07-03 12:16:18.075 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:18.077 | INFO     | main:dispatch:159 - Response: 422 (0.82ms)
+2025-07-03 12:16:18.081 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:18.184 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:16:18.184 | WARNING  | main:http_exception_handler:165 - HTTPException: All AI service endpoints are currently unavailable or failed.
+2025-07-03 12:16:18.184 | INFO     | main:dispatch:159 - Response: 503 (103.42ms)
+2025-07-03 12:16:18.191 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:18.294 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:16:18.334 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:16:18.336 | INFO     | main:dispatch:159 - Response: 200 (144.70ms)
+2025-07-03 12:16:18.342 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:18.445 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f72744563e5fc0127aa49c09091c464e8ad1bb7f7c2f75a66c4e76213196f16
+2025-07-03 12:16:18.485 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 1f72744563e5fc0127aa49c09091c464e8ad1bb7f7c2f75a66c4e76213196f16
+2025-07-03 12:16:18.487 | INFO     | main:dispatch:159 - Response: 200 (144.74ms)
+2025-07-03 12:16:18.491 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:18.594 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 647412a1ee090510aabfeeabb756394c8e5be0854bdb6b4d20c95ff3004a4ce6
+2025-07-03 12:16:18.633 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 647412a1ee090510aabfeeabb756394c8e5be0854bdb6b4d20c95ff3004a4ce6
+2025-07-03 12:16:18.635 | INFO     | main:dispatch:159 - Response: 200 (143.39ms)
+2025-07-03 12:16:18.649 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v2/chat/completions
+2025-07-03 12:16:18.752 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:16:18.792 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:16:18.794 | INFO     | main:dispatch:159 - Response: 200 (145.09ms)
+2025-07-03 12:16:18.799 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:18.902 | WARNING  | main:http_exception_handler:165 - HTTPException: This API key is not authorized for v1 (Customer) access.
+2025-07-03 12:16:18.903 | INFO     | main:dispatch:159 - Response: 403 (103.45ms)
+2025-07-03 12:16:18.907 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v2/chat/completions
+2025-07-03 12:16:19.009 | WARNING  | main:http_exception_handler:165 - HTTPException: This API key is not authorized for v2 (Business) access.
+2025-07-03 12:16:19.010 | INFO     | main:dispatch:159 - Response: 403 (102.95ms)
+2025-07-03 12:16:19.014 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:16:19.015 | WARNING  | main:http_exception_handler:165 - HTTPException: Invalid API Key or tier.
+2025-07-03 12:16:19.015 | INFO     | main:dispatch:159 - Response: 403 (1.08ms)
+2025-07-03 12:16:19.065 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:16:19.065 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:16:19.070 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:16:19.071 | WARNING  | main:_handle_chat_completions_request:200 - Request to upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e timed out: Simulated timeout
+2025-07-03 12:16:19.071 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4 and cached key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:16:19.075 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:16:19.076 | WARNING  | main:_handle_chat_completions_request:200 - Request to upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e timed out: Simulated timeout
+2025-07-03 12:16:19.076 | WARNING  | main:_handle_chat_completions_request:200 - Request to upstream service at https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4 timed out: Simulated timeout
+2025-07-03 12:16:19.080 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:16:19.080 | WARNING  | main:_handle_chat_completions_request:202 - Could not connect to upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e: Simulated connect error
+2025-07-03 12:16:19.081 | WARNING  | main:_handle_chat_completions_request:202 - Could not connect to upstream service at https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4: Simulated connect error
+2025-07-03 12:16:19.085 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:16:19.085 | WARNING  | main:_handle_chat_completions_request:196 - Upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e returned error: 500 - Internal Server Error from Upstream
+2025-07-03 12:16:19.086 | WARNING  | main:_handle_chat_completions_request:196 - Upstream service at https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4 returned error: 500 - Internal Server Error from Upstream
+2025-07-03 12:17:04.431 | INFO     | main:<module>:131 - Cache initialized with maxsize: 2000
+2025-07-03 12:17:04.535 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:04.538 | WARNING  | main:http_exception_handler:165 - HTTPException: Authorization header is missing or not a Bearer token.
+2025-07-03 12:17:04.539 | INFO     | main:dispatch:159 - Response: 401 (3.17ms)
+2025-07-03 12:17:04.545 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:04.547 | WARNING  | main:http_exception_handler:165 - HTTPException: Authorization header is missing or not a Bearer token.
+2025-07-03 12:17:04.548 | INFO     | main:dispatch:159 - Response: 401 (2.48ms)
+2025-07-03 12:17:04.555 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:04.660 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:17:04.736 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:17:04.739 | INFO     | main:dispatch:159 - Response: 200 (183.47ms)
+2025-07-03 12:17:04.746 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:04.850 | INFO     | main:_handle_chat_completions_request:182 - Cache hit for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:17:04.851 | INFO     | main:dispatch:159 - Response: 200 (104.61ms)
+2025-07-03 12:17:04.858 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:04.961 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:17:05.021 | WARNING  | main:_handle_chat_completions_request:202 - Could not connect to upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e: Connection failed to first server
+2025-07-03 12:17:05.099 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4 and cached key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:17:05.100 | INFO     | main:dispatch:159 - Response: 200 (241.83ms)
+2025-07-03 12:17:05.109 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:05.212 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:17:05.256 | WARNING  | main:_handle_chat_completions_request:202 - Could not connect to upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e: Connection failed to server 0
+2025-07-03 12:17:05.306 | WARNING  | main:_handle_chat_completions_request:202 - Could not connect to upstream service at https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4: Connection failed to server 1
+2025-07-03 12:17:05.307 | WARNING  | main:http_exception_handler:165 - HTTPException: Could not connect to AI service endpoint: https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4. It may be temporarily down.
+2025-07-03 12:17:05.307 | INFO     | main:dispatch:159 - Response: 503 (197.99ms)
+2025-07-03 12:17:05.320 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:05.424 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:17:05.507 | INFO     | main:dispatch:159 - Response: 502 (185.98ms)
+2025-07-03 12:17:05.514 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:05.618 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:17:05.705 | INFO     | main:dispatch:159 - Response: 502 (190.82ms)
+2025-07-03 12:17:05.715 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:05.820 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:17:05.965 | WARNING  | main:http_exception_handler:165 - HTTPException: The AI service returned an unexpected error (status: 503). Details: Service Unavailable
+2025-07-03 12:17:05.966 | INFO     | main:dispatch:159 - Response: 502 (250.71ms)
+2025-07-03 12:17:05.984 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:06.088 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 2c5696f9c5c03cd07322959770dddc9429b225a8d3c9a833d4b9abe9488aa9ea
+2025-07-03 12:17:06.130 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 2c5696f9c5c03cd07322959770dddc9429b225a8d3c9a833d4b9abe9488aa9ea
+2025-07-03 12:17:06.132 | INFO     | main:dispatch:159 - Response: 200 (147.59ms)
+2025-07-03 12:17:06.137 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:06.139 | INFO     | main:dispatch:159 - Response: 422 (1.06ms)
+2025-07-03 12:17:06.143 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:06.144 | INFO     | main:dispatch:159 - Response: 422 (1.15ms)
+2025-07-03 12:17:06.153 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:06.256 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:17:06.256 | WARNING  | main:http_exception_handler:165 - HTTPException: All AI service endpoints are currently unavailable or failed.
+2025-07-03 12:17:06.256 | INFO     | main:dispatch:159 - Response: 503 (103.72ms)
+2025-07-03 12:17:06.263 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:06.366 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:17:06.407 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:17:06.409 | INFO     | main:dispatch:159 - Response: 200 (145.28ms)
+2025-07-03 12:17:06.416 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:06.519 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f72744563e5fc0127aa49c09091c464e8ad1bb7f7c2f75a66c4e76213196f16
+2025-07-03 12:17:06.564 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 1f72744563e5fc0127aa49c09091c464e8ad1bb7f7c2f75a66c4e76213196f16
+2025-07-03 12:17:06.566 | INFO     | main:dispatch:159 - Response: 200 (149.93ms)
+2025-07-03 12:17:06.571 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:06.674 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 647412a1ee090510aabfeeabb756394c8e5be0854bdb6b4d20c95ff3004a4ce6
+2025-07-03 12:17:06.718 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 647412a1ee090510aabfeeabb756394c8e5be0854bdb6b4d20c95ff3004a4ce6
+2025-07-03 12:17:06.719 | INFO     | main:dispatch:159 - Response: 200 (148.50ms)
+2025-07-03 12:17:06.735 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v2/chat/completions
+2025-07-03 12:17:06.839 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:17:06.881 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 5bdf8e1c0d59be486fca8d6bcb7d1b8118287704238c576d6da9c2856ea0b3e7
+2025-07-03 12:17:06.883 | INFO     | main:dispatch:159 - Response: 200 (147.29ms)
+2025-07-03 12:17:06.890 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:06.994 | WARNING  | main:http_exception_handler:165 - HTTPException: This API key is not authorized for v1 (Customer) access.
+2025-07-03 12:17:06.995 | INFO     | main:dispatch:159 - Response: 403 (104.21ms)
+2025-07-03 12:17:06.999 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v2/chat/completions
+2025-07-03 12:17:07.102 | WARNING  | main:http_exception_handler:165 - HTTPException: This API key is not authorized for v2 (Business) access.
+2025-07-03 12:17:07.102 | INFO     | main:dispatch:159 - Response: 403 (102.94ms)
+2025-07-03 12:17:07.107 | INFO     | main:dispatch:152 - Request: POST http://testserver/api/v1/chat/completions
+2025-07-03 12:17:07.108 | WARNING  | main:http_exception_handler:165 - HTTPException: Invalid API Key or tier.
+2025-07-03 12:17:07.108 | INFO     | main:dispatch:159 - Response: 403 (1.21ms)
+2025-07-03 12:17:07.177 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:17:07.178 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e and cached key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:17:07.185 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:17:07.186 | WARNING  | main:_handle_chat_completions_request:200 - Request to upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e timed out: Simulated timeout
+2025-07-03 12:17:07.186 | INFO     | main:_handle_chat_completions_request:193 - Successfully fetched from https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4 and cached key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:17:07.192 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:17:07.192 | WARNING  | main:_handle_chat_completions_request:200 - Request to upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e timed out: Simulated timeout
+2025-07-03 12:17:07.193 | WARNING  | main:_handle_chat_completions_request:200 - Request to upstream service at https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4 timed out: Simulated timeout
+2025-07-03 12:17:07.197 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:17:07.198 | WARNING  | main:_handle_chat_completions_request:202 - Could not connect to upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e: Simulated connect error
+2025-07-03 12:17:07.198 | WARNING  | main:_handle_chat_completions_request:202 - Could not connect to upstream service at https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4: Simulated connect error
+2025-07-03 12:17:07.206 | INFO     | main:_handle_chat_completions_request:184 - Cache miss for key: 1f03f7403d6379de28b1b84081a60ec23da8515172f3a040954135adcfa6e5a2
+2025-07-03 12:17:07.207 | WARNING  | main:_handle_chat_completions_request:196 - Upstream service at https://ai.liara.ir/api/v1/682bb8eb153623bd82f7d38e returned error: 500 - Internal Server Error from Upstream
+2025-07-03 12:17:07.208 | WARNING  | main:_handle_chat_completions_request:196 - Upstream service at https://ai.liara.ir/api/v1/682bb6c5009ad8b8440289b4 returned error: 500 - Internal Server Error from Upstream
