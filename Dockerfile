@@ -1,6 +1,7 @@
 # Stage 1: Build
 FROM python:3.11-slim AS builder
 
+ENV PATH="/root/.local/bin:$PATH"
 WORKDIR /app
 
 RUN apt-get update && \
