@@ -4,11 +4,12 @@ FROM python:3.11-slim AS builder
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc python3-dev && \
+    apt-get install -y --no-install-recommends gcc python3-dev apt-utils && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --user --no-cache-dir -r requirements.txt
+RUN python -m pip install --upgrade pip && \
+    pip install --user --no-cache-dir -r requirements.txt
 
 # Stage 2: Runtime
 FROM python:3.11-slim

@@ -1,5 +1,6 @@
 import os
 import json
+import sys # Added import
 import uuid
 import time
 import asyncio
@@ -124,7 +125,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Configure logger to only use stderr
 logger.configure(handlers=[
-    {"sink": "stderr", "level": "INFO"},
+    {"sink": sys.stderr, "level": "INFO"},
 ])
 
 cache = cachetools.TTLCache(maxsize=get_sync_initial_cache_maxsize(), ttl=300)
