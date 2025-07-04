@@ -101,8 +101,8 @@ limiter_v2 = Limiter(key_func=get_remote_address, strategy="fixed-window")
 
 app = FastAPI(
     title="AI Proxy API",
-    description="پروکسی پیشرفته برای مدل‌های هوش مصنوعی, now with v1 (Customer) and v2 (Business) tiers.",
-    version="2.1",
+    description="Advanced proxy for AI models, now with v1 (Customer) and v2 (Business) tiers.",
+    version="2.5",
 )
 
 # Global limiter, its default_limits will apply to routes not specifically decorated by other limiters

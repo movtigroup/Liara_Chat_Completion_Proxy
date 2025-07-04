@@ -1,17 +1,24 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en" dir="ltr"> <!-- Changed lang to en and dir to ltr -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>صفحه پیدا نشد (404)</title>
+    <title>Page Not Found (404)</title> <!-- Translated -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <!--
+      The Tailwind config script and inline style block are kept here for now,
+      as error pages are often standalone and might not share the root tailwind.config.js
+      or external CSS easily, especially in simple serving setups.
+      If these error pages are part of a more integrated SPA or build system,
+      this could be refactored to use the global config and CSS.
+    -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
-                        'vazir': ['Vazirmatn', 'sans-serif'],
+                        'vazir': ['Vazirmatn', 'sans-serif'], // Kept Vazir for consistency, can be changed
                     },
                 },
             },
@@ -20,24 +27,25 @@
     <style type="text/tailwindcss">
         @layer base {
             body {
-                font-family: theme('fontFamily.vazir');
+                font-family: theme('fontFamily.vazir'); /* Kept Vazir for consistency */
             }
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 font-vazir flex flex-col items-center justify-center min-h-screen p-6">
+<body class="bg-gray-900 text-gray-100 font-vazir flex flex-col items-center justify-center min-h-screen p-6"> <!-- font-vazir can be changed -->
     <div class="text-center">
         <h1 class="text-9xl font-bold text-rose-500 mb-4">404</h1>
-        <h2 class="text-3xl sm:text-4xl font-semibold text-gray-200 mb-6">صفحه مورد نظر پیدا نشد</h2>
+        <h2 class="text-3xl sm:text-4xl font-semibold text-gray-200 mb-6">Page Not Found</h2> <!-- Translated -->
         <p class="text-lg text-gray-400 mb-8 max-w-md">
-            متاسفانه صفحه‌ای که به دنبال آن بودید در این آدرس وجود ندارد. ممکن است آدرس را اشتباه وارد کرده باشید یا صفحه حذف شده باشد.
+            Sorry, the page you were looking for doesn't exist at this address. You might have mistyped the address or the page may have been moved or deleted. <!-- Translated -->
         </p>
         <a href="/" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3 px-6 rounded-lg text-lg transition-all duration-150 ease-in-out transform hover:scale-105">
-            بازگشت به صفحه اصلی
+            Go Back to Homepage <!-- Translated -->
         </a>
     </div>
 
     <footer class="absolute bottom-6 text-gray-500 text-sm">
+        <!-- Translated copyright, kept structure -->
         <p id="copyright-info-404">© <span id="year-404"></span> MovtiGroup. Designed by Taha Tehrani Nasab - <a href="http://ththt.ir" target="_blank" rel="noopener noreferrer" class="hover:text-gray-300 underline">ththt.ir</a></p>
     </footer>
     <script>
