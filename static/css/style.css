@@ -1,0 +1,6 @@
+@layer base {
+    body {
+        font-family: theme('fontFamily.vazir');
+    }
+}
+/* Additional global styles if needed, or component styles */
