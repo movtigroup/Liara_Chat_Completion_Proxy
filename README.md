@@ -258,8 +258,6 @@ For comfortable and stable operation, it is recommended to choose a Liara plan t
 
 While the application might run on lower resources (e.g., minimum 125MB RAM for very light use, as per recent optimizations), 500MB RAM provides a better buffer for handling concurrent requests, caching, and background tasks performed by the Uvicorn workers and the FastAPI application. Always monitor your application's resource usage on Liara and adjust your plan as needed.
 
-The `liara.json` file is no longer used for deployment if using the GitHub Actions workflow.
-
 ---
 
 ## ❤️ Developed by MovtiGroup with FastAPI
