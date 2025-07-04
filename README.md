@@ -3,7 +3,6 @@
 ![Python Version](https://img.shields.io/badge/Python-3.11%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-purple)
-[![Open in GitHub](https://img.shields.io/badge/GitHub-Repo-blue?logo=github)](https://github.com/tahatehran)
 
 **Advanced proxy for AI models** with support for multiple advanced models and professional features including streaming, caching, error management, and WebSocket interface.
 
@@ -268,5 +267,3 @@ While the application might run on lower resources (e.g., minimum 125MB RAM for 
 ```text
 MIT License © 2025 MOVTIGROUP
 ```
-
-[![Open in GitHub](https://img.shields.io/badge/GitHub-Repo-blue?logo=github)](https://github.com/tahatehran)
