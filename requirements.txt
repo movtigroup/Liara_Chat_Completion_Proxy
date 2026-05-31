@@ -3,8 +3,9 @@ uvicorn[standard]
 sqlalchemy
 psycopg2-binary
 python-jose[cryptography]
-passlib[pbkdf2]
-litellm, "httpx[socks]"
+passlib
+litellm
+httpx[socks]
 pydantic>=2.0
 cachetools
 slowapi
@@ -12,5 +13,4 @@ websockets
 python-multipart
 psutil
 loguru
-httpx
 python-dotenv
