@@ -1,186 +1,336 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr"> <!-- Changed lang to en and dir to ltr -->
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Proxy API</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" /> <!-- Keep Vazirmatn for now, can be changed later if a purely English font is preferred -->
-    <link rel="stylesheet" href="/static/css/style.css">
-    <!-- Ensure tailwind.config.js is picked up by the CDN script or by a build process.
-         If using Play CDN and `tailwind.config.js` is in the root, it should be auto-detected.
-         The body class `font-vazir` will need to be updated if the font changes. -->
+    <title>AI Proxy Dashboard</title>
+    <script src="/static/lib/tailwind.min.js"></script>
+    <script src="/static/lib/vue.global.js"></script>
+    <script src="/static/lib/axios.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'Inter';
+            src: url('https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2') format('woff2');
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 font-vazir"> <!-- Consider changing font if Vazir is not desired for English -->
-
-    <header class="bg-gray-800 text-white p-4 shadow-lg">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-3"> <!-- Removed rtl:space-x-reverse -->
-                <span class="text-2xl font-bold">[MovtiGroup Logo]</span> <!-- Placeholder, assuming logo is language-neutral -->
-                <h1 class="text-2xl font-semibold">Liara AI Proxy</h1> <!-- Translated -->
+<body class="bg-gray-900 text-white">
+    <div id="app" class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <div class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
+            <div class="p-4 text-xl font-bold border-b border-gray-700 flex items-center">
+                <span class="mr-2">🚀</span> AI Proxy v3.1
             </div>
-            <!-- Navigation can go here if needed -->
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <a @click="view = 'dashboard'" :class="view === 'dashboard' ? 'bg-blue-600' : 'hover:bg-gray-700'" class="block p-2 rounded cursor-pointer transition">📊 Dashboard</a>
+                <a @click="view = 'playground'" :class="view === 'playground' ? 'bg-blue-600' : 'hover:bg-gray-700'" class="block p-2 rounded cursor-pointer transition">🎮 Playground</a>
+                <a @click="view = 'apikeys'" :class="view === 'apikeys' ? 'bg-blue-600' : 'hover:bg-gray-700'" class="block p-2 rounded cursor-pointer transition">🔑 API Keys</a>
+                <a v-if="isAdmin" @click="view = 'providers'" :class="view === 'providers' ? 'bg-blue-600' : 'hover:bg-gray-700'" class="block p-2 rounded cursor-pointer transition">🌐 Providers (Admin)</a>
+                <a v-if="isAdmin" @click="view = 'proxies'" :class="view === 'proxies' ? 'bg-blue-600' : 'hover:bg-gray-700'" class="block p-2 rounded cursor-pointer transition">🛡️ Proxies (Admin)</a>
+                <a @click="view = 'usage'" :class="view === 'usage' ? 'bg-blue-600' : 'hover:bg-gray-700'" class="block p-2 rounded cursor-pointer transition">📜 Usage History</a>
+            </nav>
+            <div class="p-4 border-t border-gray-700">
+                <div class="flex items-center space-x-2 text-sm text-gray-400">
+                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span>System Online</span>
+                </div>
+                <button @click="logout" class="mt-4 w-full bg-red-600 hover:bg-red-700 p-2 rounded">Logout</button>
+            </div>
         </div>
-    </header>
 
-    <main class="container mx-auto p-4 mt-4 mb-4">
-        <div class="space-y-16">
-            <header class="text-center py-10 md:py-16">
-                <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 tracking-tight">Advanced AI Models Proxy</h1> <!-- Translated -->
-                <p class="text-lg sm:text-xl text-gray-400 max-w-3xl mx-auto">
-                    Seamless and optimized access to leading models like GPT-4o-mini, Gemini 2.0 Flash, Claude 3.5 Sonnet, and others with professional features. <!-- Translated -->
-                </p>
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-8">
+                <h2 class="text-xl capitalize">{{view}}</h2>
+                <div class="flex items-center space-x-4">
+                    <span>{{username}}</span>
+                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center font-bold">
+                        {{username[0]?.toUpperCase()}}
+                    </div>
+                </div>
             </header>
 
-            <section id="models" class="py-10 md:py-16">
-                <h2 class="text-3xl sm:text-4xl font-semibold text-center mb-12">Key Supported Models</h2> <!-- Translated -->
-                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <!-- Model Card 1: OpenAI -->
-                    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl hover:ring-2 hover:ring-sky-500 transition-all duration-300 ease-in-out transform hover:-translate-y-1">
-                        <h3 class="text-2xl font-semibold mb-4 text-sky-400">OpenAI: GPT-4o-mini</h3>
-                        <ul class="list-disc list-inside space-y-2 text-gray-300">
-                            <li>Structured Output (JSON mode)</li> <!-- Translated -->
-                            <li>Function Calling</li> <!-- Translated -->
-                            <li>Streaming Responses</li> <!-- Translated -->
-                        </ul>
-                    </div>
-
-                    <!-- Model Card 2: Google -->
-                    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl hover:ring-2 hover:ring-green-500 transition-all duration-300 ease-in-out transform hover:-translate-y-1">
-                        <h3 class="text-2xl font-semibold mb-4 text-green-400">Google: Gemini 2.0 Flash</h3>
-                        <ul class="list-disc list-inside space-y-2 text-gray-300">
-                            <li>Structured Output</li> <!-- Translated -->
-                            <li>Function Calling</li> <!-- Translated -->
-                            <li>Streaming Responses</li> <!-- Translated -->
-                        </ul>
-                    </div>
-
-                    <!-- Model Card 3: Anthropic -->
-                    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl hover:ring-2 hover:ring-purple-500 transition-all duration-300 ease-in-out transform hover:-translate-y-1">
-                        <h3 class="text-2xl font-semibold mb-4 text-purple-400">Anthropic: Claude 3.5 Sonnet</h3>
-                        <ul class="list-disc list-inside space-y-2 text-gray-300">
-                            <li>Structured Output</li> <!-- Translated -->
-                            <li>Function Calling</li> <!-- Translated -->
-                            <li>Streaming Responses</li> <!-- Translated -->
-                        </ul>
+            <main class="flex-1 overflow-y-auto p-8">
+                <!-- Login View -->
+                <div v-if="!token" class="max-w-md mx-auto mt-20 bg-gray-800 p-8 rounded-lg shadow-xl">
+                    <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
+                    <div class="space-y-4">
+                        <input v-model="loginForm.username" type="text" placeholder="Username" class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
+                        <input v-model="loginForm.password" type="password" placeholder="Password" class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
+                        <button @click="login" class="w-full bg-blue-600 hover:bg-blue-700 p-2 rounded font-bold">Login</button>
                     </div>
                 </div>
-            </section>
 
-            <section id="usage" class="py-10 md:py-16">
-                <h2 class="text-3xl sm:text-4xl font-semibold text-center mb-12">Usage and Code Samples</h2> <!-- Translated -->
-                <div class="max-w-4xl mx-auto space-y-10">
-                    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl">
-                        <div class="flex justify-between items-center mb-3">
-                            <h3 class="text-xl sm:text-2xl font-semibold text-amber-400">HTTP (POST) Request Sample</h3> <!-- Translated -->
-                            <button class="copy-btn bg-gray-700 hover:bg-gray-600 text-gray-300 py-1 px-3 rounded-md text-sm transition-colors">Copy</button> <!-- Translated "کپی" to "Copy" - will be handled by JS later -->
+                <!-- Dashboard View -->
+                <div v-if="token && view === 'dashboard'" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                            <p class="text-gray-400">Total Requests</p>
+                            <p class="text-3xl font-bold">{{stats.total_requests}}</p>
                         </div>
-                        <pre class="bg-gray-700 text-gray-200 p-4 rounded-md overflow-x-auto custom-scrollbar"><code class="language-json text-sm block whitespace-pre-wrap">POST /api/v1/chat/completions
-Authorization: Bearer YOUR_API_KEY
-
-{
-  "model": "openai/gpt-4o-mini",
-  "messages": [
-    {"role": "user", "content": "Hello, how are you?"} <!-- Translated -->
-  ],
-  "temperature": 0.7,
-  "max_tokens": 500
-}</code></pre>
-                    </div>
-                    <div class="bg-gray-800 p-6 rounded-xl shadow-2xl">
-                        <div class="flex justify-between items-center mb-3">
-                            <h3 class="text-xl sm:text-2xl font-semibold text-teal-400">WebSocket (JavaScript) Sample</h3> <!-- Translated -->
-                            <button class="copy-btn bg-gray-700 hover:bg-gray-600 text-gray-300 py-1 px-3 rounded-md text-sm transition-colors">Copy</button> <!-- Translated "کپی" to "Copy" - will be handled by JS later -->
+                        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                            <p class="text-gray-400">Total Tokens</p>
+                            <p class="text-3xl font-bold">{{stats.total_tokens}}</p>
                         </div>
-                        <pre class="bg-gray-700 text-gray-200 p-4 rounded-md overflow-x-auto custom-scrollbar"><code class="language-javascript text-sm block whitespace-pre-wrap">const ws = new WebSocket('ws://YOUR_DOMAIN/ws/v1/chat/completions');
-
-ws.onopen = () => {
-  // First, send API Key for authentication
-  ws.send(JSON.stringify({
-    api_key: "Bearer YOUR_API_KEY" // Ensure Bearer prefix
-  }));
-  
-  // Then, send chat configuration
-  ws.send(JSON.stringify({
-    model: "openai/gpt-4o-mini",
-    messages: [{role: "user", "content": "Hello"}], // Translated
-    stream: true // stream is implicitly true for WebSockets with this proxy
-  }));
-};
-
-ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  console.log(data);
-  // Handle streamed chunks or final error messages
-};
-
-ws.onerror = (error) => {
-  console.error("WebSocket Error:", error);
-};
-
-ws.onclose = (event) => {
-  console.log("WebSocket closed:", event.code, event.reason);
-};</code></pre>
-                    </div>
-                </div>
-            </section>
-            
-            <section id="websocket-test" class="py-10 md:py-16 bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 my-12">
-                <h2 class="text-3xl sm:text-4xl font-semibold text-center mb-10 text-rose-400">Interactive WebSocket Test</h2> <!-- Translated -->
-                <div class="max-w-3xl mx-auto space-y-6">
-                    <div>
-                        <label for="api-key" class="block mb-2 text-sm font-medium text-gray-300">API Key (include Bearer):</label> <!-- Translated -->
-                        <input type="text" id="api-key" class="bg-gray-700 border border-gray-600 text-gray-200 text-sm rounded-lg focus:ring-rose-500 focus:border-rose-500 block w-full p-3 placeholder-gray-500" placeholder="Bearer YOUR_API_KEY">
-                    </div>
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        <button id="ws-connect" class="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-150 ease-in-out transform active:scale-95">Connect</button> <!-- Translated -->
-                        <button id="ws-disconnect" class="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-150 ease-in-out transform active:scale-95" disabled>Disconnect</button> <!-- Translated -->
-                    </div>
-                    <div>
-                         <span id="ws-status" class="block text-center text-sm p-3 rounded-md bg-gray-700 text-gray-400 transition-all duration-300">Status: Disconnected</span> <!-- Translated "وضعیت: قطع" -->
-                    </div>
-
-                    <div class="mt-6 space-y-4">
-                        <div id="ws-response" class="h-72 overflow-y-auto bg-gray-700 p-4 rounded-lg border border-gray-600 text-sm custom-scrollbar">
-                            <p class="text-gray-500">Responses will be shown here...</p> <!-- Translated -->
+                        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                            <p class="text-gray-400">Est. Cost</p>
+                            <p class="text-3xl font-bold">${{stats.total_cost?.toFixed(4)}}</p>
                         </div>
-                        <div class="flex gap-3">
-                            <input type="text" id="message-input" class="flex-grow bg-gray-700 border border-gray-600 text-gray-200 text-sm rounded-lg focus:ring-rose-500 focus:border-rose-500 block w-full p-3 placeholder-gray-500" placeholder="Write your message..." disabled> <!-- Translated -->
-                            <button id="send-btn" class="bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-semibold py-2.5 px-5 rounded-lg transition-all duration-150 ease-in-out transform active:scale-95" disabled>Send</button> <!-- Translated -->
+                        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                            <p class="text-gray-400">Active Keys</p>
+                            <p class="text-3xl font-bold">{{apiKeys.length}}</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                        <h3 class="text-lg font-bold mb-4">Model Usage Breakdown</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="border-b border-gray-700">
+                                    <tr>
+                                        <th class="py-2">Model</th>
+                                        <th>Requests</th>
+                                        <th>Tokens</th>
+                                        <th>Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(s, m) in stats.model_stats" :key="m" class="border-b border-gray-700/50">
+                                        <td class="py-2 font-mono text-blue-400">{{m}}</td>
+                                        <td>{{s.requests}}</td>
+                                        <td>{{s.tokens}}</td>
+                                        <td>${{s.cost?.toFixed(4)}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-            </section>
+
+                <!-- Playground View -->
+                <div v-if="token && view === 'playground'" class="flex flex-col h-full space-y-4">
+                    <div class="flex space-x-4">
+                        <select v-model="playground.model" class="bg-gray-800 border border-gray-700 p-2 rounded flex-1">
+                            <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
+                            <option value="openai/gpt-4">GPT-4</option>
+                            <option value="google/gemini-pro">Gemini Pro</option>
+                            <option value="anthropic/claude-3-haiku-20240307">Claude 3 Haiku</option>
+                        </select>
+                        <select v-model="playground.apiKey" class="bg-gray-800 border border-gray-700 p-2 rounded w-64">
+                            <option v-for="key in apiKeys" :value="key.key">{{key.name}}</option>
+                        </select>
+                        <input v-model="playground.country" placeholder="Country (e.g. US)" class="bg-gray-800 border border-gray-700 p-2 rounded w-32">
+                    </div>
+                    <div class="flex-1 bg-gray-800 rounded-lg border border-gray-700 p-4 overflow-y-auto space-y-4">
+                        <div v-for="msg in playground.messages" :class="msg.role === 'user' ? 'text-right' : 'text-left'">
+                            <div :class="msg.role === 'user' ? 'bg-blue-600 inline-block p-2 rounded-lg ml-auto' : 'bg-gray-700 inline-block p-2 rounded-lg'">
+                                {{msg.content}}
+                            </div>
+                        </div>
+                        <div v-if="playground.loading" class="text-gray-500 italic">Thinking...</div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <input v-model="playground.input" @keyup.enter="sendPlayground" type="text" placeholder="Type a message..." class="flex-1 bg-gray-800 border border-gray-700 p-2 rounded">
+                        <button @click="sendPlayground" class="bg-blue-600 p-2 rounded px-6">Send</button>
+                    </div>
+                </div>
+
+                <!-- Proxies View -->
+                <div v-if="token && view === 'proxies'" class="space-y-6">
+                    <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                        <h3 class="text-lg font-bold mb-4">Add Proxy (HTTP/SOCKS5)</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <input v-model="newProxy.host" placeholder="Host/IP" class="p-2 bg-gray-700 rounded border border-gray-600">
+                            <input v-model.number="newProxy.port" type="number" placeholder="Port" class="p-2 bg-gray-700 rounded border border-gray-600">
+                            <select v-model="newProxy.protocol" class="p-2 bg-gray-700 rounded border border-gray-600">
+                                <option value="http">HTTP</option>
+                                <option value="socks5">SOCKS5</option>
+                            </select>
+                            <input v-model="newProxy.username" placeholder="Username (Optional)" class="p-2 bg-gray-700 rounded border border-gray-600">
+                            <input v-model="newProxy.password" type="password" placeholder="Password (Optional)" class="p-2 bg-gray-700 rounded border border-gray-600">
+                            <input v-model="newProxy.country" placeholder="Country Code (e.g. US)" class="p-2 bg-gray-700 rounded border border-gray-600">
+                        </div>
+                        <button @click="addProxy" class="mt-4 bg-green-600 hover:bg-green-700 p-2 rounded px-8">Add Proxy</button>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-700/50">
+                                <tr>
+                                    <th class="p-4">Proxy</th>
+                                    <th class="p-4">Type</th>
+                                    <th class="p-4">Country</th>
+                                    <th class="p-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="p in proxies" :key="p.id" class="border-t border-gray-700">
+                                    <td class="p-4">{{p.host}}:{{p.port}}</td>
+                                    <td class="p-4 uppercase text-xs font-bold">{{p.protocol}}</td>
+                                    <td class="p-4">{{p.country || 'Any'}}</td>
+                                    <td class="p-4 text-right">
+                                        <button @click="deleteProxy(p.id)" class="text-red-500 hover:underline text-sm">Remove</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- API Keys, Providers, Usage views remain same (omitted for brevity in this mock but present in real) -->
+                <!-- ... existing views ... -->
+                <!-- API Keys View -->
+                <div v-if="token && view === 'apikeys'" class="space-y-6">
+                    <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                        <h3 class="text-lg font-bold mb-4">Create New API Key</h3>
+                        <div class="flex space-x-2">
+                            <input v-model="newKeyName" type="text" placeholder="Key Name (e.g., MyApp)" class="flex-1 bg-gray-700 border border-gray-600 p-2 rounded">
+                            <button @click="createKey" class="bg-blue-600 hover:bg-blue-700 p-2 rounded px-6">Generate</button>
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-700/50">
+                                <tr>
+                                    <th class="p-4">Name</th>
+                                    <th class="p-4">Key</th>
+                                    <th class="p-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="key in apiKeys" :key="key.id" class="border-t border-gray-700">
+                                    <td class="p-4">{{key.name}}</td>
+                                    <td class="p-4 font-mono text-yellow-400">{{key.key}}</td>
+                                    <td class="p-4 text-right">
+                                        <button @click="deleteKey(key.id)" class="text-red-500 hover:underline">Delete</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Providers Admin View -->
+                <div v-if="token && view === 'providers'" class="space-y-6">
+                    <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                        <h3 class="text-lg font-bold mb-4">Add Provider</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <input v-model="newProvider.provider" placeholder="Provider (e.g. openai)" class="p-2 bg-gray-700 rounded border border-gray-600">
+                            <input v-model="newProvider.api_key" placeholder="API Key" class="p-2 bg-gray-700 rounded border border-gray-600">
+                            <input v-model.number="newProvider.priority" type="number" placeholder="Priority" class="p-2 bg-gray-700 rounded border border-gray-600">
+                            <input v-model="newProvider.base_url" placeholder="Base URL (Optional)" class="p-2 bg-gray-700 rounded border border-gray-600">
+                        </div>
+                        <button @click="addProvider" class="mt-4 bg-green-600 p-2 rounded px-8">Add Provider</button>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-700/50">
+                                <tr>
+                                    <th class="p-4">Provider</th>
+                                    <th class="p-4">Priority</th>
+                                    <th class="p-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="p in providers" class="border-t border-gray-700">
+                                    <td class="p-4">{{p.provider}}</td>
+                                    <td class="p-4">{{p.priority}}</td>
+                                    <td class="p-4"><span class="bg-green-900 text-green-300 px-2 rounded text-xs">Active</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Usage History View -->
+                <div v-if="token && view === 'usage'" class="space-y-6">
+                   <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-700/50">
+                                <tr>
+                                    <th class="p-4">Time</th>
+                                    <th class="p-4">Model</th>
+                                    <th class="p-4">Tokens</th>
+                                    <th class="p-4">Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="log in usageHistory" class="border-t border-gray-700 text-sm">
+                                    <td class="p-4 text-gray-400">{{new Date(log.created_at).toLocaleString()}}</td>
+                                    <td class="p-4 font-mono">{{log.model}}</td>
+                                    <td class="p-4">{{log.total_tokens}}</td>
+                                    <td class="p-4">${{log.cost?.toFixed(5)}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
         </div>
-    </main>
+    </div>
 
-    <footer class="bg-gray-800 text-gray-300 p-6 text-center mt-12">
-        <div class="container mx-auto">
-            <div class="flex justify-center space-x-6 mb-4"> <!-- Removed rtl:space-x-reverse -->
-                <a href="https://github.com/movtigroup" target="_blank" rel="noopener noreferrer" class="hover:text-white hover:underline">GitHub Profile</a>
-                <a href="https://github.com/movtigroup/Liara_Chat_Completion_Proxy" target="_blank" rel="noopener noreferrer" class="hover:text-white hover:underline">Project Repository</a>
-                <a href="https://ble.ir/chatqpt" target="_blank" rel="noopener noreferrer" class="hover:text-white hover:underline">Bale Channel</a> <!-- Text is a name, kept as is -->
-                <a href="https://daramet.com/tahatehran" target="_blank" rel="noopener noreferrer" class="hover:text-white hover:underline">Support/Donate</a>
-            </div>
-            <p id="copyright-info" class="text-sm">
-                <!-- Copyright text will be inserted by JavaScript -->
-            </p>
-        </div>
-    </footer>
-    
-    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"></script>
     <script>
-        // Dynamically set copyright year
-        document.addEventListener('DOMContentLoaded', function() {
-            const currentYear = new Date().getFullYear();
-            // Translated the copyright string
-            const copyrightText = `© ${currentYear} MovtiGroup. Designed by Taha Tehrani Nasab - <a href="http://ththt.ir" target="_blank" rel="noopener noreferrer" class="hover:text-white hover:underline">ththt.ir</a>`;
-            const copyrightElement = document.getElementById('copyright-info');
-            if (copyrightElement) {
-                copyrightElement.innerHTML = copyrightText;
+        const { createApp } = Vue
+        createApp({
+            data() {
+                return {
+                    view: 'dashboard', token: localStorage.getItem('token'), username: localStorage.getItem('username') || 'User', isAdmin: false,
+                    loginForm: { username: '', password: '' }, stats: {}, apiKeys: [], usageHistory: [], providers: [], proxies: [],
+                    newKeyName: '', newProvider: { provider: '', api_key: '', priority: 1, base_url: '' },
+                    newProxy: { host: '', port: 8080, protocol: 'http', username: '', password: '', country: '' },
+                    playground: { model: 'openai/gpt-4o-mini', input: '', messages: [], loading: false, apiKey: '', country: '' }
+                }
+            },
+            mounted() { if (this.token) this.init() },
+            methods: {
+                async init() {
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
+                    this.fetchStats(); this.fetchKeys(); this.fetchUsage();
+                    try {
+                        const res = await axios.get('/admin/providers');
+                        this.providers = res.data; this.isAdmin = true;
+                        this.fetchProxies();
+                    } catch(e) { this.isAdmin = false; }
+                },
+                async login() {
+                    const params = new URLSearchParams(); params.append('username', this.loginForm.username); params.append('password', this.loginForm.password);
+                    try {
+                        const res = await axios.post('/token', params);
+                        this.token = res.data.access_token; this.username = this.loginForm.username;
+                        localStorage.setItem('token', this.token); localStorage.setItem('username', this.username); this.init();
+                    } catch(e) { alert('Login failed'); }
+                },
+                logout() { this.token = null; localStorage.clear(); window.location.reload(); },
+                async fetchStats() { const res = await axios.get('/user/stats'); this.stats = res.data; },
+                async fetchKeys() { const res = await axios.get('/user/api-keys'); this.apiKeys = res.data; if (this.apiKeys.length > 0) this.playground.apiKey = this.apiKeys[0].key; },
+                async fetchUsage() { const res = await axios.get('/user/usage'); this.usageHistory = res.data; },
+                async fetchProxies() { const res = await axios.get('/admin/proxies'); this.proxies = res.data; },
+                async createKey() { await axios.post('/user/api-keys', { name: this.newKeyName }); this.newKeyName = ''; this.fetchKeys(); },
+                async deleteKey(id) { await axios.delete(`/user/api-keys/${id}`); this.fetchKeys(); },
+                async addProvider() {
+                    const config = this.newProvider.base_url ? { base_url: this.newProvider.base_url } : null;
+                    await axios.post('/admin/providers', { provider: this.newProvider.provider, api_key: this.newProvider.api_key, priority: this.newProvider.priority, config: config });
+                    this.newProvider = { provider: '', api_key: '', priority: 1, base_url: '' }; this.init();
+                },
+                async addProxy() {
+                    await axios.post('/admin/proxies', this.newProxy);
+                    this.newProxy = { host: '', port: 8080, protocol: 'http', username: '', password: '', country: '' };
+                    this.fetchProxies();
+                },
+                async deleteProxy(id) { await axios.delete(`/admin/proxies/${id}`); this.fetchProxies(); },
+                async sendPlayground() {
+                    if (!this.playground.input) return;
+                    const msg = { role: 'user', content: this.playground.input };
+                    this.playground.messages.push(msg); this.playground.input = ''; this.playground.loading = true;
+                    try {
+                        const url = this.playground.country ? `/api/v1/chat/completions?country=${this.playground.country}` : '/api/v1/chat/completions';
+                        const res = await axios.post(url, { model: this.playground.model, messages: this.playground.messages }, { headers: { 'Authorization': `Bearer ${this.playground.apiKey}` } });
+                        this.playground.messages.push(res.data.choices[0].message); this.fetchStats(); this.fetchUsage();
+                    } catch(e) { this.playground.messages.push({ role: 'assistant', content: 'Error: ' + (e.response?.data?.detail || e.message) });
+                    } finally { this.playground.loading = false; }
+                }
             }
-        });
+        }).mount('#app')
     </script>
-    <script src="/static/js/script.js"></script>
 </body>
 </html>

@@ -1,38 +1,41 @@
 import os
 import json
-import sys # Added import
+import sys
 import uuid
 import time
 import asyncio
-from typing import Dict, Literal, Tuple, Callable
-from fastapi import FastAPI, Request, HTTPException, WebSocket, WebSocketDisconnect, APIRouter, Security
+from typing import Dict, Literal, Tuple, Callable, List, Optional
+from fastapi import FastAPI, Request, HTTPException, WebSocket, WebSocketDisconnect, APIRouter, Security, Depends, status
 from fastapi.security.api_key import APIKeyHeader
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 import httpx
 import cachetools
 import psutil
+from sqlalchemy.orm import Session
+import litellm
+from litellm import completion
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from link import LIARA_BASE_URLS
-from schemas import CompletionRequest
-from utils import generate_cache_key, get_headers
-from errors import (
-    UpstreamServiceError, # Added
-    UpstreamServiceDownError,
-    UpstreamTimeoutError,
-    UpstreamResponseError,
-    GeneralProxyError,
-)
+import models
+import schemas
+import auth
+from database import get_db, engine, Base
+from utils import generate_cache_key
+from provider_manager import get_provider_key
+from proxy_manager import get_best_proxy, format_proxy_url
+
+# Initialize Database
+Base.metadata.create_all(bind=engine)
 
 # --- Resource-Aware Configuration Functions ---
 def get_sync_initial_cache_maxsize() -> int:
-    """Determines cache maxsize based on available system memory."""
     try:
         mem_total_gb = psutil.virtual_memory().total / (1024 ** 3)
         if mem_total_gb > 7: return 2000
@@ -42,94 +45,34 @@ def get_sync_initial_cache_maxsize() -> int:
         logger.warning(f"Could not determine system memory for cache sizing, defaulting to 500. Error: {e}")
         return 500
 
-def get_sync_dynamic_customer_limit_str() -> str:
-    """Generates a dynamic rate limit string for v1 customers."""
-    try:
-        num_cpus = os.cpu_count() or 1
-        base_rate_per_core = 50
-        limit = max(100, num_cpus * base_rate_per_core)
-        if psutil.cpu_percent(interval=0.1) > 90: limit = max(50, int(limit * 0.75))
-        return f"{limit}/minute"
-    except Exception as e:
-        logger.warning(f"Could not determine dynamic rate limit for v1, defaulting to 100/minute. Error: {e}")
-        return "100/minute"
-
-def get_sync_dynamic_business_limit_str() -> str:
-    """Generates a dynamic rate limit string for v2 business tier."""
-    try:
-        num_cpus = os.cpu_count() or 1
-        base_rate_per_core = 500
-        limit = max(1000, num_cpus * base_rate_per_core)
-        if psutil.cpu_percent(interval=0.1) > 90: limit = max(500, int(limit * 0.75))
-        return f"{limit}/minute"
-    except Exception as e:
-        logger.warning(f"Could not determine dynamic rate limit for v2, defaulting to 1000/minute. Error: {e}")
-        return "1000/minute"
-
 def get_sync_dynamic_default_limit_str() -> str:
-    """Generates a dynamic rate limit string for the global default limiter."""
     try:
         num_cpus = os.cpu_count() or 1
-        base_rate_per_core = 50
-        limit = max(100, num_cpus * base_rate_per_core)
-        if psutil.cpu_percent(interval=0.1) > 85: limit = max(50, int(limit * 0.8))
+        base_rate_per_core = 100
+        limit = max(200, num_cpus * base_rate_per_core)
         return f"{limit}/minute"
     except Exception as e:
-        logger.warning(f"Could not determine dynamic default rate limit, defaulting to 100/minute. Error: {e}")
-        return "100/minute"
-# --- End Resource-Aware Configuration Functions ---
+        logger.warning(f"Could not determine dynamic default rate limit, defaulting to 200/minute. Error: {e}")
+        return "200/minute"
 
-API_KEY_NAME = "Authorization"
-api_key_header_scheme = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
-APIKeyDetails = Tuple[str, Literal["v1_customer", "v2_business"]]
-
-async def get_api_key_details(api_key_header: str = Security(api_key_header_scheme)) -> APIKeyDetails:
-    if not api_key_header or not api_key_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Authorization header is missing or not a Bearer token.")
-    api_key = api_key_header.replace("Bearer ", "").strip()
-    if not api_key:
-        raise HTTPException(status_code=401, detail="API Key is empty after stripping Bearer prefix.")
-    if api_key.startswith("biz-valid-") and len(api_key) > len("biz-valid-"): return api_key, "v2_business"
-    elif api_key.startswith("cust-valid-") and len(api_key) > len("cust-valid-"): return api_key, "v1_customer"
-    elif api_key == "test-api-key": return api_key, "v1_customer"
-    raise HTTPException(status_code=403, detail="Invalid API Key or tier.")
-
-# Rate Limiters. The default_limits here are fallbacks if routes are not decorated.
-# For decorated routes, the limit_value in the decorator takes precedence.
-limiter_v1 = Limiter(key_func=get_remote_address, strategy="fixed-window")
-limiter_v2 = Limiter(key_func=get_remote_address, strategy="fixed-window")
+# Rate Limiters
+limiter = Limiter(key_func=get_remote_address, default_limits=[get_sync_dynamic_default_limit_str])
 
 app = FastAPI(
-    title="AI Proxy API",
-    description="Advanced proxy for AI models, now with v1 (Customer) and v2 (Business) tiers.",
-    version="2.5",
+    title="Universal AI Proxy API",
+    description="Professional multi-provider AI Proxy supporting 90+ models with Proxy List support.",
+    version="3.1",
 )
 
-# Global limiter, its default_limits will apply to routes not specifically decorated by other limiters
-limiter = Limiter(key_func=get_remote_address, default_limits=[get_sync_dynamic_default_limit_str])
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-router_v1 = APIRouter(prefix="/api/v1")
-router_v2 = APIRouter(prefix="/api/v2")
-ws_router_v1 = APIRouter(prefix="/ws/v1")
-ws_router_v2 = APIRouter(prefix="/ws/v2")
-
+os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# os.makedirs("logs", exist_ok=True) # Disabled due to read-only filesystem issues
-# logger.add(
-#     "logs/app.log", rotation="10 MB", retention="10 days", level="DEBUG",
-#     enqueue=True, backtrace=True, diagnose=True,
-# ) # Disabled due to read-only filesystem issues
-
-# Configure logger to only use stderr
-logger.configure(handlers=[
-    {"sink": sys.stderr, "level": "INFO"},
-])
+logger.configure(handlers=[{"sink": sys.stderr, "level": "INFO"}])
 
 cache = cachetools.TTLCache(maxsize=get_sync_initial_cache_maxsize(), ttl=300)
-logger.info(f"Cache initialized with maxsize: {get_sync_initial_cache_maxsize()}")
 
 class ConnectionManager:
     def __init__(self):
@@ -148,213 +91,200 @@ class ConnectionManager:
                 except Exception as e: logger.error(f"Error sending message to {connection_id}: {e}")
 manager = ConnectionManager()
 
-class LoggingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        logger.info(f"Request: {request.method} {request.url}")
-        start_time = time.time()
-        try: response = await call_next(request)
-        except Exception as e:
-            logger.exception(f"Unhandled exception: {e}")
-            return JSONResponse(status_code=500, content={"detail": "Internal server error"})
-        process_time = (time.time() - start_time) * 1000
-        logger.info(f"Response: {response.status_code} ({process_time:.2f}ms)")
-        return response
-app.add_middleware(LoggingMiddleware)
+async def verify_api_key(request: Request, db: Session = Depends(get_db)):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        api_key = request.query_params.get("api_key")
+        if not api_key:
+            raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    else:
+        api_key = auth_header.replace("Bearer ", "").strip()
 
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
-    logger.warning(f"HTTPException towards client: {exc.status_code} - {exc.detail} for {request.url}")
+    db_key = db.query(models.APIKey).filter(models.APIKey.key == api_key, models.APIKey.is_active == True).first()
+    if not db_key:
+        if api_key == "test-api-key" and db.query(models.User).count() == 0:
+            return None
+        raise HTTPException(status_code=403, detail="Invalid API Key")
+    return db_key.owner
 
-    accept_header = request.headers.get("accept", "")
-    prefer_json = "application/json" in accept_header.lower() or not accept_header or accept_header == "*/*"
+@app.post("/token", response_model=schemas.Token)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.username == form_data.username).first()
+    if not user or not auth.verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Incorrect username or password", headers={"WWW-Authenticate": "Bearer"})
+    access_token_expires = auth.timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = auth.create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
+    return {"access_token": access_token, "token_type": "bearer"}
 
-    custom_page_path = None
-    if exc.status_code == 404:
-        custom_page_path = "static/404.html"
-    elif exc.status_code == 403:
-        custom_page_path = "static/403.html"
+@app.post("/register", response_model=None)
+async def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter((models.User.username == user.username) | (models.User.email == user.email)).first()
+    if db_user: raise HTTPException(status_code=400, detail="Username or email already registered")
+    is_admin = db.query(models.User).count() == 0
+    new_user = models.User(username=user.username, email=user.email, hashed_password=auth.get_password_hash(user.password), is_admin=is_admin)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {"message": "User created successfully"}
 
-    if custom_page_path and not prefer_json: # Serve HTML only if JSON is not preferred
-        try:
-            with open(custom_page_path, "r", encoding="utf-8") as f:
-                content = f.read()
-            return HTMLResponse(content=content, status_code=exc.status_code)
-        except FileNotFoundError:
-            logger.error(f"{custom_page_path} not found, serving default JSON response for {exc.status_code} as fallback.")
-            # Fall through to JSONResponse below
-
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
-
-@app.exception_handler(Exception)
-async def generic_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled generic exception: {exc} for path {request.url}", exc_info=True)
-    try:
-        with open("static/500.html", "r", encoding="utf-8") as f:
-            content = f.read()
-        return HTMLResponse(content=content, status_code=500)
-    except FileNotFoundError:
-        logger.error("static/500.html not found, serving default JSON 500.")
-        return JSONResponse(status_code=500, content={"detail": "Internal Server Error (custom 500 page missing)"})
-
-@app.get("/", include_in_schema=False)
-async def serve_documentation():
-    try:
-        with open("static/index.html", "r") as f: content = f.read()
-        return HTMLResponse(content=content, status_code=200)
-    except FileNotFoundError:
-        logger.error("static/index.html not found")
-        return HTMLResponse(content="Documentation not found.", status_code=404)
-
-async def _handle_chat_completions_request(api_key_details: APIKeyDetails, body: CompletionRequest):
-    api_key, tier = api_key_details
+async def handle_ai_completion(body: schemas.CompletionRequest, user: Optional[models.User], db: Session, country: str = None):
     request_data = body.model_dump(exclude_unset=True)
     cache_key = generate_cache_key(request_data)
-    if cache_key in cache:
-        logger.info(f"Cache hit for key: {cache_key}")
-        return JSONResponse(content=cache[cache_key])
-    logger.info(f"Cache miss for key: {cache_key}")
-    last_exception = None
-    for url in LIARA_BASE_URLS:
-        try:
-            async with httpx.AsyncClient(timeout=30) as client:
-                response = await client.post(f"{url}/chat/completions", headers=get_headers(api_key), json=request_data)
-                if response.status_code == 200:
-                    response_data = response.json()
-                    cache[cache_key] = response_data
-                    logger.info(f"Successfully fetched from {url} and cached key: {cache_key}")
-                    return JSONResponse(content=response_data, status_code=200)
-                else:
-                    logger.warning(f"Upstream service at {url} returned error: {response.status_code} - {response.text}")
-                    last_exception = UpstreamResponseError(upstream_status_code=response.status_code, upstream_detail=response.text)
-                    continue
-        except httpx.TimeoutException as e:
-            logger.warning(f"Request to upstream service at {url} timed out: {str(e)}"); last_exception = UpstreamTimeoutError(); continue
-        except httpx.ConnectError as e:
-            logger.warning(f"Could not connect to upstream service at {url}: {str(e)}"); last_exception = UpstreamServiceDownError(f"Could not connect to AI service endpoint: {url}. It may be temporarily down."); continue
-        except httpx.HTTPStatusError as e:
-            logger.error(f"HTTPStatusError from upstream service {url}: {e.response.status_code} - {e.response.text}"); last_exception = UpstreamResponseError(upstream_status_code=e.response.status_code, upstream_detail=e.response.text); continue
-        except Exception as e:
-            logger.error(f"Unexpected error connecting to upstream service {url}: {str(e)}", exc_info=True); last_exception = GeneralProxyError(f"An unexpected error occurred while contacting AI service: {url}."); continue
-    if last_exception: raise last_exception
-    raise UpstreamServiceDownError("All AI service endpoints are currently unavailable or failed.")
 
-# --- V1 API Endpoints ---
-@router_v1.post("/chat/completions", response_model=None)
-@limiter_v1.limit(get_sync_dynamic_customer_limit_str) # Pass the callable here
-async def v1_chat_completions(request: Request, body: CompletionRequest, api_key_details: APIKeyDetails = Security(get_api_key_details)):
-    _, tier = api_key_details
-    if tier != "v1_customer": raise HTTPException(status_code=403, detail="This API key is not authorized for v1 (Customer) access.")
-    return await _handle_chat_completions_request(api_key_details, body)
+    if cache_key in cache and not body.stream:
+        return cache[cache_key], None
 
-# --- V2 API Endpoints ---
-@router_v2.post("/chat/completions", response_model=None)
-@limiter_v2.limit(get_sync_dynamic_business_limit_str) # Pass the callable here
-async def v2_chat_completions(request: Request, body: CompletionRequest, api_key_details: APIKeyDetails = Security(get_api_key_details)):
-    _, tier = api_key_details
-    if tier != "v2_business": raise HTTPException(status_code=403, detail="This API key is not authorized for v2 (Business) access.")
-    return await _handle_chat_completions_request(api_key_details, body)
+    provider_key_obj = get_provider_key(db, body.model)
+    if not provider_key_obj:
+        raise HTTPException(status_code=503, detail="No active provider keys available for this model")
 
-async def _handle_websocket_chat(websocket: WebSocket, raw_api_key: str, tier_for_logging: str):
+    # Proxy Logic
+    proxy_obj = get_best_proxy(db, country=country)
+    proxy_url = format_proxy_url(proxy_obj) if proxy_obj else None
+
+    # LiteLLM Configuration
+    litellm_kwargs = {**request_data}
+    litellm_kwargs["api_key"] = provider_key_obj.api_key
+    if provider_key_obj.config and 'base_url' in provider_key_obj.config:
+        litellm_kwargs["api_base"] = provider_key_obj.config['base_url']
+
+    if proxy_url:
+        logger.info(f"Using proxy: {proxy_url}")
+        # LiteLLM supports a custom client to handle proxies
+        # For simplicity, we can set litellm.proxy = proxy_url (Global)
+        # but it's better per-request if supported.
+        # Actually, LiteLLM allows passing a custom client.
+        # But for most providers, setting the env var or litellm.proxy works.
+        # Per request:
+        litellm_kwargs["proxy_url"] = proxy_url
+
+    if provider_key_obj.provider == "openai-compatible":
+        litellm_kwargs["custom_llm_provider"] = "openai"
+
+    try:
+        start_time = time.time()
+        response = completion(**litellm_kwargs)
+
+        if body.stream:
+            return response, start_time
+
+        response_json = response.model_dump()
+        cache[cache_key] = response_json
+
+        # Log usage
+        usage = response_json.get('usage', {})
+        new_log = models.UsageLog(
+            user_id=user.id if user else None,
+            model=body.model,
+            request_tokens=usage.get('prompt_tokens', 0),
+            response_tokens=usage.get('completion_tokens', 0),
+            total_tokens=usage.get('total_tokens', 0),
+            cost=litellm.completion_cost(completion_response=response),
+            request_data=request_data,
+            response_data=response_json,
+            status_code=200
+        )
+        db.add(new_log)
+        db.commit()
+
+        return response_json, None
+    except Exception as e:
+        logger.error(f"LiteLLM Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"AI Provider Error: {str(e)}")
+
+@app.post("/api/v1/chat/completions")
+async def api_v1_chat_completions(
+    body: schemas.CompletionRequest,
+    user: Optional[models.User] = Depends(verify_api_key),
+    db: Session = Depends(get_db),
+    country: Optional[str] = None
+):
+    response, start_time = await handle_ai_completion(body, user, db, country=country)
+    if body.stream:
+        async def stream_generator():
+            for chunk in response: yield f"data: {json.dumps(chunk.model_dump())}\n\n"
+            yield "data: [DONE]\n\n"
+        return StreamingResponse(stream_generator(), media_type="text/event-stream")
+    return JSONResponse(content=response)
+
+@app.websocket("/ws/v1/chat/completions")
+async def ws_v1_chat_completions(websocket: WebSocket, db: Session = Depends(get_db)):
     connection_id = str(uuid.uuid4())
     await manager.connect(websocket, connection_id)
-    logger.info(f"WebSocket connection {connection_id} established for tier: {tier_for_logging}")
     try:
+        auth_data = await websocket.receive_json()
+        api_key = auth_data.get("api_key", "").replace("Bearer ", "").strip()
+        country = auth_data.get("country")
+        db_key = db.query(models.APIKey).filter(models.APIKey.key == api_key, models.APIKey.is_active == True).first()
+        user = db_key.owner if db_key else None
+        if not db_key and not (api_key == "test-api-key" and db.query(models.User).count() == 0):
+            await websocket.send_json({"error": "Invalid API Key"}); await websocket.close(); return
         config = await websocket.receive_json()
-        request_data = {"model": config.get("model", "openai/gpt-4o-mini"), "messages": config.get("messages", []), "stream": True, **{k: v for k, v in config.items() if k not in ["model", "messages"]}}
-        success = False; last_error_payload = None
-        for url in LIARA_BASE_URLS:
-            try:
-                async with httpx.AsyncClient(timeout=60) as client:
-                    async with client.stream("POST", f"{url}/chat/completions", headers=get_headers(raw_api_key), json=request_data) as response:
-                        if response.status_code == 200:
-                            async for chunk in response.aiter_text():
-                                if chunk.strip(): await manager.send_message(connection_id, chunk)
-                            success = True; break
-                        else:
-                            err_text = await response.aread(); err = UpstreamResponseError(upstream_status_code=response.status_code, upstream_detail=err_text.decode(errors='ignore'))
-                            logger.warning(f"WS: Upstream service at {url.split('/')[2]} returned error: {response.status_code} - {err.detail}"); last_error_payload = {"error": err.detail}; continue
-            except httpx.TimeoutException as e: err = UpstreamTimeoutError(); logger.warning(f"WS: Request to AI service at {url.split('/')[2]} timed out: {str(e)}"); last_error_payload = {"error": err.detail}; continue
-            except httpx.ConnectError as e: err = UpstreamServiceDownError(f"Could not connect to AI service endpoint: {url.split('/')[2]}. It may be temporarily down."); logger.warning(f"WS: Could not connect to AI service at {url.split('/')[2]}: {str(e)}"); last_error_payload = {"error": err.detail}; continue
-            except Exception as e:
-                err = GeneralProxyError(f"An unexpected problem occurred while streaming from AI service: {url.split('/')[2]}.")
-                logger.error(f"WS: Unexpected error with AI service at {url.split('/')[2]} during stream: {str(e)}", exc_info=True)
-                current_error_detail = getattr(e, 'detail', str(e))
-                if isinstance(e, UpstreamServiceError) and hasattr(e, 'detail') and e.detail: current_error_detail = e.detail
-                last_error_payload = {"error": current_error_detail}
-                try: await websocket.send_json(last_error_payload)
-                except Exception as send_exc: logger.error(f"WS: Failed to send error to client {connection_id}: {send_exc}")
-                return
-        if not success:
-            if last_error_payload: await websocket.send_json(last_error_payload)
-            else: err = UpstreamServiceDownError("No AI service endpoints are configured or all failed to respond."); await websocket.send_json({"error": err.detail})
-    except WebSocketDisconnect: logger.info(f"WebSocket disconnected: {connection_id}")
-    except json.JSONDecodeError:
-        logger.warning(f"WebSocket {connection_id}: Invalid JSON message format received from client.")
-        try: await websocket.send_json({"error": "Invalid JSON message format received from client."})
-        except Exception: pass
+        body = schemas.CompletionRequest(**config)
+        body.stream = True
+        response, start_time = await handle_ai_completion(body, user, db, country=country)
+        for chunk in response: await manager.send_message(connection_id, json.dumps(chunk.model_dump()))
+        await manager.send_message(connection_id, "[DONE]")
+    except WebSocketDisconnect: logger.info(f"WS disconnected: {connection_id}")
     except Exception as e:
-        logger.exception(f"General WebSocket error for {connection_id}: {str(e)}")
-        err = GeneralProxyError("An internal server error occurred in the WebSocket service.")
-        try: await websocket.send_json({"error": err.detail})
-        except Exception: logger.error(f"Failed to send error to already closed WebSocket {connection_id}")
+        logger.error(f"WS Error: {str(e)}")
+        try: await websocket.send_json({"error": str(e)})
+        except: pass
     finally: await manager.disconnect(connection_id)
 
-@ws_router_v1.websocket("/chat/completions")
-async def ws_v1_chat_completions(websocket: WebSocket):
-    raw_api_key_from_ws = ""
-    await websocket.accept() # Accept the connection first
-    try:
-        auth_data = await websocket.receive_json()
-        api_key_header_sim = auth_data.get("api_key")
-        if not api_key_header_sim: await websocket.send_json({"error": "API key is required as first message: {\"api_key\": \"Bearer <YOUR_KEY>\"}"}); await websocket.close(code=4001); return # Use custom close code
-        if not api_key_header_sim.startswith("Bearer "): await websocket.send_json({"error": "Invalid API Key format. Expected Bearer token."}); await websocket.close(); return
-        raw_api_key_from_ws = api_key_header_sim.replace("Bearer ", "").strip()
-        if not raw_api_key_from_ws: await websocket.send_json({"error": "API Key is empty."}); await websocket.close(); return
-        tier = "invalid"
-        if raw_api_key_from_ws.startswith("cust-valid-") and len(raw_api_key_from_ws) > len("cust-valid-"): tier = "v1_customer"
-        elif raw_api_key_from_ws == "test-api-key": tier = "v1_customer"
-        if tier != "v1_customer": await websocket.send_json({"error": "This API key is not authorized for v1 (Customer) WebSocket access."}); await websocket.close(); return
-        await _handle_websocket_chat(websocket, raw_api_key_from_ws, "v1_customer")
-    except json.JSONDecodeError:
-        logger.warning("WebSocket auth: Invalid JSON message format for authentication.")
-        try: await websocket.send_json({"error": "Invalid JSON message format for authentication."}); await websocket.close()
-        except Exception: await websocket.close()
-    except Exception as e:
-        logger.error(f"WebSocket auth error (v1): {e}", exc_info=True)
-        try: await websocket.send_json({"error": "Authentication failed due to an internal error."}); await websocket.close()
-        except: await websocket.close()
+# Admin & User management
+@app.post("/admin/providers", dependencies=[Depends(auth.get_current_admin_user)])
+async def add_provider(provider_in: schemas.ProviderKeyCreate, db: Session = Depends(get_db)):
+    new_provider = models.ProviderKey(**provider_in.model_dump()); db.add(new_provider); db.commit(); db.refresh(new_provider); return new_provider
 
-@ws_router_v2.websocket("/chat/completions")
-async def ws_v2_chat_completions(websocket: WebSocket):
-    raw_api_key_from_ws = ""
-    await websocket.accept() # Accept the connection first
-    try:
-        auth_data = await websocket.receive_json()
-        api_key_header_sim = auth_data.get("api_key")
-        if not api_key_header_sim: await websocket.send_json({"error": "API key is required as first message: {\"api_key\": \"Bearer <YOUR_KEY>\"}"}); await websocket.close(code=4001); return # Use custom close code
-        if not api_key_header_sim.startswith("Bearer "): await websocket.send_json({"error": "Invalid API Key format. Expected Bearer token."}); await websocket.close(); return
-        raw_api_key_from_ws = api_key_header_sim.replace("Bearer ", "").strip()
-        if not raw_api_key_from_ws: await websocket.send_json({"error": "API Key is empty."}); await websocket.close(); return
-        tier = "invalid"
-        if raw_api_key_from_ws.startswith("biz-valid-") and len(raw_api_key_from_ws) > len("biz-valid-"): tier = "v2_business"
-        if tier != "v2_business": await websocket.send_json({"error": "This API key is not authorized for v2 (Business) WebSocket access."}); await websocket.close(); return
-        await _handle_websocket_chat(websocket, raw_api_key_from_ws, "v2_business")
-    except json.JSONDecodeError:
-        logger.warning("WebSocket auth: Invalid JSON message format for authentication.")
-        try: await websocket.send_json({"error": "Invalid JSON message format for authentication."}); await websocket.close()
-        except Exception: await websocket.close() # Ensure close on error
-    except Exception as e:
-        logger.error(f"WebSocket auth error (v2): {e}", exc_info=True)
-        try: await websocket.send_json({"error": "Authentication failed due to an internal error."}); await websocket.close()
-        except: await websocket.close() # Ensure close on error
+@app.get("/admin/providers", dependencies=[Depends(auth.get_current_admin_user)])
+async def list_providers(db: Session = Depends(get_db)): return db.query(models.ProviderKey).all()
 
-app.include_router(router_v1); app.include_router(router_v2); app.include_router(ws_router_v1); app.include_router(ws_router_v2)
+@app.post("/admin/proxies", dependencies=[Depends(auth.get_current_admin_user)])
+async def add_proxy(proxy_in: schemas.ProxyCreate, db: Session = Depends(get_db)):
+    new_proxy = models.Proxy(**proxy_in.model_dump()); db.add(new_proxy); db.commit(); db.refresh(new_proxy); return new_proxy
+
+@app.get("/admin/proxies", dependencies=[Depends(auth.get_current_admin_user)])
+async def list_proxies(db: Session = Depends(get_db)): return db.query(models.Proxy).all()
+
+@app.delete("/admin/proxies/{proxy_id}", dependencies=[Depends(auth.get_current_admin_user)])
+async def delete_proxy(proxy_id: int, db: Session = Depends(get_db)):
+    proxy = db.query(models.Proxy).filter(models.Proxy.id == proxy_id).first()
+    if not proxy: raise HTTPException(status_code=404, detail="Proxy not found")
+    db.delete(proxy); db.commit(); return {"message": "Proxy deleted"}
+
+@app.get("/admin/usage", dependencies=[Depends(auth.get_current_admin_user)])
+async def get_all_usage(db: Session = Depends(get_db)): return db.query(models.UsageLog).order_by(models.UsageLog.created_at.desc()).limit(100).all()
+
+@app.get("/user/usage")
+async def get_user_usage(current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)): return db.query(models.UsageLog).filter(models.UsageLog.user_id == current_user.id).order_by(models.UsageLog.created_at.desc()).all()
+
+@app.post("/user/api-keys")
+async def create_user_api_key(key_in: schemas.APIKeyCreate, current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)):
+    new_key = models.APIKey(key=f"sk-{uuid.uuid4().hex}", name=key_in.name, user_id=current_user.id); db.add(new_key); db.commit(); db.refresh(new_key); return new_key
+
+@app.get("/user/api-keys")
+async def list_user_api_keys(current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)): return db.query(models.APIKey).filter(models.APIKey.user_id == current_user.id).all()
+
+@app.delete("/user/api-keys/{key_id}")
+async def delete_user_api_key(key_id: int, current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)):
+    key = db.query(models.APIKey).filter(models.APIKey.id == key_id, models.APIKey.user_id == current_user.id).first()
+    if not key: raise HTTPException(status_code=404, detail="API Key not found")
+    db.delete(key); db.commit(); return {"message": "API Key deleted"}
+
+@app.get("/user/stats")
+async def get_user_stats(current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)):
+    logs = db.query(models.UsageLog).filter(models.UsageLog.user_id == current_user.id).all()
+    total_tokens = sum(log.total_tokens for log in logs); total_cost = sum(log.cost for log in logs); total_requests = len(logs)
+    model_stats = {}
+    for log in logs:
+        if log.model not in model_stats: model_stats[log.model] = {"tokens": 0, "requests": 0, "cost": 0.0}
+        model_stats[log.model]["tokens"] += log.total_tokens; model_stats[log.model]["requests"] += 1; model_stats[log.model]["cost"] += log.cost
+    return {"total_tokens": total_tokens, "total_cost": total_cost, "total_requests": total_requests, "model_stats": model_stats}
+
+@app.get("/", include_in_schema=False)
+async def serve_home(): return HTMLResponse(content="<h1>AI Proxy v3.1</h1><p>Visit /docs for API documentation or use the Next.js frontend.</p>")
 
 if __name__ == "__main__":
     import uvicorn
-    logger.info(f"Available CPUs: {os.cpu_count()}")
-    logger.info(f"Initial cache maxsize: {get_sync_initial_cache_maxsize()}")
-    logger.info(f"Initial v1 customer limit: {get_sync_dynamic_customer_limit_str()}")
-    logger.info(f"Initial v2 business limit: {get_sync_dynamic_business_limit_str()}")
-    logger.info(f"Initial default limit: {get_sync_dynamic_default_limit_str()}")
-    uvicorn.run("main:app", host="0.0.0.0", port=8100, reload=True, ws_ping_interval=30, ws_ping_timeout=60)
+    uvicorn.run("main:app", host="0.0.0.0", port=8100)
