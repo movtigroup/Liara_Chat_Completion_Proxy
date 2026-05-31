@@ -20,7 +20,7 @@
         <!-- Sidebar -->
         <div class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
             <div class="p-4 text-xl font-bold border-b border-gray-700 flex items-center">
-                <span class="mr-2">🚀</span> AI Proxy v3.1
+                <span class="mr-2">🚀</span> AI Proxy v3.2
             </div>
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
                 <a @click="view = 'dashboard'" :class="view === 'dashboard' ? 'bg-blue-600' : 'hover:bg-gray-700'" class="block p-2 rounded cursor-pointer transition">📊 Dashboard</a>
@@ -177,8 +177,6 @@
                     </div>
                 </div>
 
-                <!-- API Keys, Providers, Usage views remain same (omitted for brevity in this mock but present in real) -->
-                <!-- ... existing views ... -->
                 <!-- API Keys View -->
                 <div v-if="token && view === 'apikeys'" class="space-y-6">
                     <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
@@ -302,10 +300,16 @@
                 },
                 logout() { this.token = null; localStorage.clear(); window.location.reload(); },
                 async fetchStats() { const res = await axios.get('/user/stats'); this.stats = res.data; },
-                async fetchKeys() { const res = await axios.get('/user/api-keys'); this.apiKeys = res.data; if (this.apiKeys.length > 0) this.playground.apiKey = this.apiKeys[0].key; },
+                async fetchKeys() { const res = await axios.get('/user/api-keys'); this.apiKeys = res.data; },
                 async fetchUsage() { const res = await axios.get('/user/usage'); this.usageHistory = res.data; },
                 async fetchProxies() { const res = await axios.get('/admin/proxies'); this.proxies = res.data; },
-                async createKey() { await axios.post('/user/api-keys', { name: this.newKeyName }); this.newKeyName = ''; this.fetchKeys(); },
+                async createKey() {
+                    try {
+                        const res = await axios.post('/user/api-keys', { name: this.newKeyName });
+                        alert("IMPORTANT: Your API Key is: " + res.data.key + "\nSave it now, it won't be shown again!");
+                        this.newKeyName = ''; this.fetchKeys();
+                    } catch(e) { alert('Failed to create key'); }
+                },
                 async deleteKey(id) { await axios.delete(`/user/api-keys/${id}`); this.fetchKeys(); },
                 async addProvider() {
                     const config = this.newProvider.base_url ? { base_url: this.newProvider.base_url } : null;
