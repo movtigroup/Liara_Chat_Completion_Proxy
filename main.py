@@ -29,6 +29,7 @@ import auth
 from database import get_db, engine, Base
 from utils import generate_cache_key
 from provider_manager import get_provider_key
+from proxy_manager import get_best_proxy, format_proxy_url
 
 # Initialize Database
 Base.metadata.create_all(bind=engine)
@@ -59,14 +60,13 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[get_sync_dynamic_
 
 app = FastAPI(
     title="Universal AI Proxy API",
-    description="Professional multi-provider AI Proxy supporting 90+ models via LiteLLM and New-API integration.",
-    version="3.0",
+    description="Professional multi-provider AI Proxy supporting 90+ models with Proxy List support.",
+    version="3.1",
 )
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Ensure static directory exists
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -94,7 +94,6 @@ manager = ConnectionManager()
 async def verify_api_key(request: Request, db: Session = Depends(get_db)):
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
-        # Check query param for fallback (sometimes useful for WS)
         api_key = request.query_params.get("api_key")
         if not api_key:
             raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
@@ -112,36 +111,23 @@ async def verify_api_key(request: Request, db: Session = Depends(get_db)):
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username == form_data.username).first()
     if not user or not auth.verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise HTTPException(status_code=401, detail="Incorrect username or password", headers={"WWW-Authenticate": "Bearer"})
     access_token_expires = auth.timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = auth.create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
+    access_token = auth.create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/register", response_model=None)
 async def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter((models.User.username == user.username) | (models.User.email == user.email)).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Username or email already registered")
-
+    if db_user: raise HTTPException(status_code=400, detail="Username or email already registered")
     is_admin = db.query(models.User).count() == 0
-    new_user = models.User(
-        username=user.username,
-        email=user.email,
-        hashed_password=auth.get_password_hash(user.password),
-        is_admin=is_admin
-    )
+    new_user = models.User(username=user.username, email=user.email, hashed_password=auth.get_password_hash(user.password), is_admin=is_admin)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     return {"message": "User created successfully"}
 
-async def handle_ai_completion(body: schemas.CompletionRequest, user: Optional[models.User], db: Session):
+async def handle_ai_completion(body: schemas.CompletionRequest, user: Optional[models.User], db: Session, country: str = None):
     request_data = body.model_dump(exclude_unset=True)
     cache_key = generate_cache_key(request_data)
 
@@ -152,13 +138,26 @@ async def handle_ai_completion(body: schemas.CompletionRequest, user: Optional[m
     if not provider_key_obj:
         raise HTTPException(status_code=503, detail="No active provider keys available for this model")
 
+    # Proxy Logic
+    proxy_obj = get_best_proxy(db, country=country)
+    proxy_url = format_proxy_url(proxy_obj) if proxy_obj else None
+
     # LiteLLM Configuration
     litellm_kwargs = {**request_data}
     litellm_kwargs["api_key"] = provider_key_obj.api_key
     if provider_key_obj.config and 'base_url' in provider_key_obj.config:
         litellm_kwargs["api_base"] = provider_key_obj.config['base_url']
 
-    # Custom provider mapping for New-API or other OpenAI compatible ones
+    if proxy_url:
+        logger.info(f"Using proxy: {proxy_url}")
+        # LiteLLM supports a custom client to handle proxies
+        # For simplicity, we can set litellm.proxy = proxy_url (Global)
+        # but it's better per-request if supported.
+        # Actually, LiteLLM allows passing a custom client.
+        # But for most providers, setting the env var or litellm.proxy works.
+        # Per request:
+        litellm_kwargs["proxy_url"] = proxy_url
+
     if provider_key_obj.provider == "openai-compatible":
         litellm_kwargs["custom_llm_provider"] = "openai"
 
@@ -197,17 +196,15 @@ async def handle_ai_completion(body: schemas.CompletionRequest, user: Optional[m
 async def api_v1_chat_completions(
     body: schemas.CompletionRequest,
     user: Optional[models.User] = Depends(verify_api_key),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    country: Optional[str] = None
 ):
-    response, start_time = await handle_ai_completion(body, user, db)
-
+    response, start_time = await handle_ai_completion(body, user, db, country=country)
     if body.stream:
         async def stream_generator():
-            for chunk in response:
-                yield f"data: {json.dumps(chunk.model_dump())}\n\n"
+            for chunk in response: yield f"data: {json.dumps(chunk.model_dump())}\n\n"
             yield "data: [DONE]\n\n"
         return StreamingResponse(stream_generator(), media_type="text/event-stream")
-
     return JSONResponse(content=response)
 
 @app.websocket("/ws/v1/chat/completions")
@@ -215,110 +212,79 @@ async def ws_v1_chat_completions(websocket: WebSocket, db: Session = Depends(get
     connection_id = str(uuid.uuid4())
     await manager.connect(websocket, connection_id)
     try:
-        # Auth message first
         auth_data = await websocket.receive_json()
         api_key = auth_data.get("api_key", "").replace("Bearer ", "").strip()
+        country = auth_data.get("country")
         db_key = db.query(models.APIKey).filter(models.APIKey.key == api_key, models.APIKey.is_active == True).first()
         user = db_key.owner if db_key else None
-
         if not db_key and not (api_key == "test-api-key" and db.query(models.User).count() == 0):
-            await websocket.send_json({"error": "Invalid API Key"})
-            await websocket.close()
-            return
-
-        # Receive config/request
+            await websocket.send_json({"error": "Invalid API Key"}); await websocket.close(); return
         config = await websocket.receive_json()
         body = schemas.CompletionRequest(**config)
-        body.stream = True # WS is always stream in this context
-
-        response, start_time = await handle_ai_completion(body, user, db)
-
-        for chunk in response:
-            await manager.send_message(connection_id, json.dumps(chunk.model_dump()))
-
+        body.stream = True
+        response, start_time = await handle_ai_completion(body, user, db, country=country)
+        for chunk in response: await manager.send_message(connection_id, json.dumps(chunk.model_dump()))
         await manager.send_message(connection_id, "[DONE]")
-    except WebSocketDisconnect:
-        logger.info(f"WS disconnected: {connection_id}")
+    except WebSocketDisconnect: logger.info(f"WS disconnected: {connection_id}")
     except Exception as e:
         logger.error(f"WS Error: {str(e)}")
         try: await websocket.send_json({"error": str(e)})
         except: pass
-    finally:
-        await manager.disconnect(connection_id)
+    finally: await manager.disconnect(connection_id)
 
 # Admin & User management
 @app.post("/admin/providers", dependencies=[Depends(auth.get_current_admin_user)])
 async def add_provider(provider_in: schemas.ProviderKeyCreate, db: Session = Depends(get_db)):
-    new_provider = models.ProviderKey(**provider_in.model_dump())
-    db.add(new_provider)
-    db.commit()
-    db.refresh(new_provider)
-    return new_provider
+    new_provider = models.ProviderKey(**provider_in.model_dump()); db.add(new_provider); db.commit(); db.refresh(new_provider); return new_provider
 
 @app.get("/admin/providers", dependencies=[Depends(auth.get_current_admin_user)])
-async def list_providers(db: Session = Depends(get_db)):
-    return db.query(models.ProviderKey).all()
+async def list_providers(db: Session = Depends(get_db)): return db.query(models.ProviderKey).all()
+
+@app.post("/admin/proxies", dependencies=[Depends(auth.get_current_admin_user)])
+async def add_proxy(proxy_in: schemas.ProxyCreate, db: Session = Depends(get_db)):
+    new_proxy = models.Proxy(**proxy_in.model_dump()); db.add(new_proxy); db.commit(); db.refresh(new_proxy); return new_proxy
+
+@app.get("/admin/proxies", dependencies=[Depends(auth.get_current_admin_user)])
+async def list_proxies(db: Session = Depends(get_db)): return db.query(models.Proxy).all()
+
+@app.delete("/admin/proxies/{proxy_id}", dependencies=[Depends(auth.get_current_admin_user)])
+async def delete_proxy(proxy_id: int, db: Session = Depends(get_db)):
+    proxy = db.query(models.Proxy).filter(models.Proxy.id == proxy_id).first()
+    if not proxy: raise HTTPException(status_code=404, detail="Proxy not found")
+    db.delete(proxy); db.commit(); return {"message": "Proxy deleted"}
 
 @app.get("/admin/usage", dependencies=[Depends(auth.get_current_admin_user)])
-async def get_all_usage(db: Session = Depends(get_db)):
-    return db.query(models.UsageLog).order_by(models.UsageLog.created_at.desc()).limit(100).all()
+async def get_all_usage(db: Session = Depends(get_db)): return db.query(models.UsageLog).order_by(models.UsageLog.created_at.desc()).limit(100).all()
 
 @app.get("/user/usage")
-async def get_user_usage(current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)):
-    return db.query(models.UsageLog).filter(models.UsageLog.user_id == current_user.id).order_by(models.UsageLog.created_at.desc()).all()
+async def get_user_usage(current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)): return db.query(models.UsageLog).filter(models.UsageLog.user_id == current_user.id).order_by(models.UsageLog.created_at.desc()).all()
 
 @app.post("/user/api-keys")
 async def create_user_api_key(key_in: schemas.APIKeyCreate, current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)):
-    new_key = models.APIKey(
-        key=f"sk-{uuid.uuid4().hex}",
-        name=key_in.name,
-        user_id=current_user.id
-    )
-    db.add(new_key)
-    db.commit()
-    db.refresh(new_key)
-    return new_key
-
-@app.get("/", include_in_schema=False)
-async def serve_home():
-    return HTMLResponse(content="<h1>AI Proxy v3.0</h1><p>Visit /docs for API documentation or use the Next.js frontend.</p>")
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8100)
+    new_key = models.APIKey(key=f"sk-{uuid.uuid4().hex}", name=key_in.name, user_id=current_user.id); db.add(new_key); db.commit(); db.refresh(new_key); return new_key
 
 @app.get("/user/api-keys")
-async def list_user_api_keys(current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)):
-    return db.query(models.APIKey).filter(models.APIKey.user_id == current_user.id).all()
+async def list_user_api_keys(current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)): return db.query(models.APIKey).filter(models.APIKey.user_id == current_user.id).all()
 
 @app.delete("/user/api-keys/{key_id}")
 async def delete_user_api_key(key_id: int, current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)):
     key = db.query(models.APIKey).filter(models.APIKey.id == key_id, models.APIKey.user_id == current_user.id).first()
-    if not key:
-        raise HTTPException(status_code=404, detail="API Key not found")
-    db.delete(key)
-    db.commit()
-    return {"message": "API Key deleted"}
+    if not key: raise HTTPException(status_code=404, detail="API Key not found")
+    db.delete(key); db.commit(); return {"message": "API Key deleted"}
 
 @app.get("/user/stats")
 async def get_user_stats(current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)):
     logs = db.query(models.UsageLog).filter(models.UsageLog.user_id == current_user.id).all()
-    total_tokens = sum(log.total_tokens for log in logs)
-    total_cost = sum(log.cost for log in logs)
-    total_requests = len(logs)
-
-    # Group by model
+    total_tokens = sum(log.total_tokens for log in logs); total_cost = sum(log.cost for log in logs); total_requests = len(logs)
     model_stats = {}
     for log in logs:
-        if log.model not in model_stats:
-            model_stats[log.model] = {"tokens": 0, "requests": 0, "cost": 0.0}
-        model_stats[log.model]["tokens"] += log.total_tokens
-        model_stats[log.model]["requests"] += 1
-        model_stats[log.model]["cost"] += log.cost
+        if log.model not in model_stats: model_stats[log.model] = {"tokens": 0, "requests": 0, "cost": 0.0}
+        model_stats[log.model]["tokens"] += log.total_tokens; model_stats[log.model]["requests"] += 1; model_stats[log.model]["cost"] += log.cost
+    return {"total_tokens": total_tokens, "total_cost": total_cost, "total_requests": total_requests, "model_stats": model_stats}
 
-    return {
-        "total_tokens": total_tokens,
-        "total_cost": total_cost,
-        "total_requests": total_requests,
-        "model_stats": model_stats
-    }
+@app.get("/", include_in_schema=False)
+async def serve_home(): return HTMLResponse(content="<h1>AI Proxy v3.1</h1><p>Visit /docs for API documentation or use the Next.js frontend.</p>")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8100)

@@ -52,3 +52,18 @@ class UsageLog(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("User", back_populates="usage_logs")
+
+class Proxy(Base):
+    __tablename__ = "proxies"
+    id = Column(Integer, primary_key=True, index=True)
+    host = Column(String, index=True)
+    port = Column(Integer)
+    protocol = Column(String, default="http") # http, socks5
+    username = Column(String, nullable=True)
+    password = Column(String, nullable=True)
+    country = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    # Relationship to specific providers if needed
+    # provider_keys = relationship("ProviderKey", back_populates="proxy")

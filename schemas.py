@@ -81,3 +81,12 @@ class ProviderKeyCreate(BaseModel):
     api_key: str
     priority: Optional[int] = 1
     config: Optional[dict] = None
+
+class ProxyCreate(BaseModel):
+    host: str
+    port: int
+    protocol: Literal["http", "socks5"] = "http"
+    username: Optional[str] = None
+    password: Optional[str] = None
+    country: Optional[str] = None
+    is_active: Optional[bool] = True
