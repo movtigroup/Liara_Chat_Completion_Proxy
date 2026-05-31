@@ -4,6 +4,7 @@ import sys
 import uuid
 import time
 import asyncio
+import hashlib
 from typing import Dict, Literal, Tuple, Callable, List, Optional
 from fastapi import FastAPI, Request, HTTPException, WebSocket, WebSocketDisconnect, APIRouter, Security, Depends, status
 from fastapi.security.api_key import APIKeyHeader
@@ -15,8 +16,9 @@ import httpx
 import cachetools
 import psutil
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 import litellm
-from litellm import completion
+from litellm import acompletion
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -60,8 +62,8 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[get_sync_dynamic_
 
 app = FastAPI(
     title="Universal AI Proxy API",
-    description="Professional multi-provider AI Proxy supporting 90+ models with Proxy List support.",
-    version="3.1",
+    description="Professional multi-provider AI Proxy Gateway.",
+    version="3.2",
 )
 
 app.state.limiter = limiter
@@ -84,26 +86,33 @@ class ConnectionManager:
     async def disconnect(self, connection_id: str):
         async with self.lock:
             if connection_id in self.active_connections: del self.active_connections[connection_id]
-    async def send_message(self, connection_id: str, message: str):
+    async def send_message(self, connection_id: str, message: str) -> bool:
         async with self.lock:
             if connection_id in self.active_connections:
-                try: await self.active_connections[connection_id].send_text(message)
-                except Exception as e: logger.error(f"Error sending message to {connection_id}: {e}")
+                try:
+                    await self.active_connections[connection_id].send_text(message)
+                    return True
+                except Exception as e:
+                    logger.error(f"Error sending message to {connection_id}: {e}")
+                    return False
+        return False
 manager = ConnectionManager()
+
+def hash_key(key: str) -> str:
+    return hashlib.sha256(key.encode()).hexdigest()
 
 async def verify_api_key(request: Request, db: Session = Depends(get_db)):
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         api_key = request.query_params.get("api_key")
-        if not api_key:
-            raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+        if not api_key: raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
     else:
         api_key = auth_header.replace("Bearer ", "").strip()
 
-    db_key = db.query(models.APIKey).filter(models.APIKey.key == api_key, models.APIKey.is_active == True).first()
+    hashed = hash_key(api_key)
+    db_key = db.query(models.APIKey).filter(models.APIKey.key == hashed, models.APIKey.is_active == True).first()
     if not db_key:
-        if api_key == "test-api-key" and db.query(models.User).count() == 0:
-            return None
+        if api_key == "test-api-key" and db.query(models.User).count() == 0: return None
         raise HTTPException(status_code=403, detail="Invalid API Key")
     return db_key.owner
 
@@ -122,71 +131,41 @@ async def register_user(user: schemas.UserCreate, db: Session = Depends(get_db))
     if db_user: raise HTTPException(status_code=400, detail="Username or email already registered")
     is_admin = db.query(models.User).count() == 0
     new_user = models.User(username=user.username, email=user.email, hashed_password=auth.get_password_hash(user.password), is_admin=is_admin)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return {"message": "User created successfully"}
+    db.add(new_user); db.commit(); db.refresh(new_user); return {"message": "User created successfully"}
 
 async def handle_ai_completion(body: schemas.CompletionRequest, user: Optional[models.User], db: Session, country: str = None):
     request_data = body.model_dump(exclude_unset=True)
     cache_key = generate_cache_key(request_data)
-
-    if cache_key in cache and not body.stream:
-        return cache[cache_key], None
+    if cache_key in cache and not body.stream: return cache[cache_key], None
 
     provider_key_obj = get_provider_key(db, body.model)
-    if not provider_key_obj:
-        raise HTTPException(status_code=503, detail="No active provider keys available for this model")
+    if not provider_key_obj: raise HTTPException(status_code=503, detail="No active provider keys available for this model")
 
-    # Proxy Logic
     proxy_obj = get_best_proxy(db, country=country)
     proxy_url = format_proxy_url(proxy_obj) if proxy_obj else None
 
-    # LiteLLM Configuration
     litellm_kwargs = {**request_data}
     litellm_kwargs["api_key"] = provider_key_obj.api_key
-    if provider_key_obj.config and 'base_url' in provider_key_obj.config:
-        litellm_kwargs["api_base"] = provider_key_obj.config['base_url']
-
-    if proxy_url:
-        logger.info(f"Using proxy: {proxy_url}")
-        # LiteLLM supports a custom client to handle proxies
-        # For simplicity, we can set litellm.proxy = proxy_url (Global)
-        # but it's better per-request if supported.
-        # Actually, LiteLLM allows passing a custom client.
-        # But for most providers, setting the env var or litellm.proxy works.
-        # Per request:
-        litellm_kwargs["proxy_url"] = proxy_url
-
-    if provider_key_obj.provider == "openai-compatible":
-        litellm_kwargs["custom_llm_provider"] = "openai"
+    if provider_key_obj.config and 'base_url' in provider_key_obj.config: litellm_kwargs["api_base"] = provider_key_obj.config['base_url']
+    if proxy_url: litellm_kwargs["proxy_url"] = proxy_url
+    if provider_key_obj.provider == "openai-compatible": litellm_kwargs["custom_llm_provider"] = "openai"
 
     try:
         start_time = time.time()
-        response = completion(**litellm_kwargs)
-
-        if body.stream:
-            return response, start_time
+        response = await acompletion(**litellm_kwargs)
+        if body.stream: return response, start_time
 
         response_json = response.model_dump()
         cache[cache_key] = response_json
 
-        # Log usage
         usage = response_json.get('usage', {})
         new_log = models.UsageLog(
-            user_id=user.id if user else None,
-            model=body.model,
-            request_tokens=usage.get('prompt_tokens', 0),
-            response_tokens=usage.get('completion_tokens', 0),
-            total_tokens=usage.get('total_tokens', 0),
-            cost=litellm.completion_cost(completion_response=response),
-            request_data=request_data,
-            response_data=response_json,
-            status_code=200
+            user_id=user.id if user else None, model=body.model,
+            request_tokens=usage.get('prompt_tokens', 0), response_tokens=usage.get('completion_tokens', 0),
+            total_tokens=usage.get('total_tokens', 0), cost=litellm.completion_cost(completion_response=response),
+            request_data=request_data, response_data=response_json, status_code=200
         )
-        db.add(new_log)
-        db.commit()
-
+        db.add(new_log); db.commit()
         return response_json, None
     except Exception as e:
         logger.error(f"LiteLLM Error: {str(e)}")
@@ -202,7 +181,7 @@ async def api_v1_chat_completions(
     response, start_time = await handle_ai_completion(body, user, db, country=country)
     if body.stream:
         async def stream_generator():
-            for chunk in response: yield f"data: {json.dumps(chunk.model_dump())}\n\n"
+            async for chunk in response: yield f"data: {json.dumps(chunk.model_dump())}\n\n"
             yield "data: [DONE]\n\n"
         return StreamingResponse(stream_generator(), media_type="text/event-stream")
     return JSONResponse(content=response)
@@ -215,7 +194,8 @@ async def ws_v1_chat_completions(websocket: WebSocket, db: Session = Depends(get
         auth_data = await websocket.receive_json()
         api_key = auth_data.get("api_key", "").replace("Bearer ", "").strip()
         country = auth_data.get("country")
-        db_key = db.query(models.APIKey).filter(models.APIKey.key == api_key, models.APIKey.is_active == True).first()
+        hashed = hash_key(api_key)
+        db_key = db.query(models.APIKey).filter(models.APIKey.key == hashed, models.APIKey.is_active == True).first()
         user = db_key.owner if db_key else None
         if not db_key and not (api_key == "test-api-key" and db.query(models.User).count() == 0):
             await websocket.send_json({"error": "Invalid API Key"}); await websocket.close(); return
@@ -223,7 +203,8 @@ async def ws_v1_chat_completions(websocket: WebSocket, db: Session = Depends(get
         body = schemas.CompletionRequest(**config)
         body.stream = True
         response, start_time = await handle_ai_completion(body, user, db, country=country)
-        for chunk in response: await manager.send_message(connection_id, json.dumps(chunk.model_dump()))
+        async for chunk in response:
+            if not await manager.send_message(connection_id, json.dumps(chunk.model_dump())): break
         await manager.send_message(connection_id, "[DONE]")
     except WebSocketDisconnect: logger.info(f"WS disconnected: {connection_id}")
     except Exception as e:
@@ -232,7 +213,6 @@ async def ws_v1_chat_completions(websocket: WebSocket, db: Session = Depends(get
         except: pass
     finally: await manager.disconnect(connection_id)
 
-# Admin & User management
 @app.post("/admin/providers", dependencies=[Depends(auth.get_current_admin_user)])
 async def add_provider(provider_in: schemas.ProviderKeyCreate, db: Session = Depends(get_db)):
     new_provider = models.ProviderKey(**provider_in.model_dump()); db.add(new_provider); db.commit(); db.refresh(new_provider); return new_provider
@@ -261,10 +241,16 @@ async def get_user_usage(current_user: models.User = Depends(auth.get_current_ac
 
 @app.post("/user/api-keys")
 async def create_user_api_key(key_in: schemas.APIKeyCreate, current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)):
-    new_key = models.APIKey(key=f"sk-{uuid.uuid4().hex}", name=key_in.name, user_id=current_user.id); db.add(new_key); db.commit(); db.refresh(new_key); return new_key
+    raw_key = f"sk-{uuid.uuid4().hex}"
+    new_key = models.APIKey(key=hash_key(raw_key), name=key_in.name, user_id=current_user.id)
+    db.add(new_key); db.commit(); db.refresh(new_key)
+    return {"id": new_key.id, "name": new_key.name, "key": raw_key, "created_at": new_key.created_at}
 
 @app.get("/user/api-keys")
-async def list_user_api_keys(current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)): return db.query(models.APIKey).filter(models.APIKey.user_id == current_user.id).all()
+async def list_user_api_keys(current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)):
+    # Note: We return hashed keys (or masked) for listing. In this case, we just return metadata.
+    keys = db.query(models.APIKey).filter(models.APIKey.user_id == current_user.id).all()
+    return [{"id": k.id, "name": k.name, "key": "sk-********", "created_at": k.created_at} for k in keys]
 
 @app.delete("/user/api-keys/{key_id}")
 async def delete_user_api_key(key_id: int, current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)):
@@ -274,16 +260,30 @@ async def delete_user_api_key(key_id: int, current_user: models.User = Depends(a
 
 @app.get("/user/stats")
 async def get_user_stats(current_user: models.User = Depends(auth.get_current_active_user), db: Session = Depends(get_db)):
-    logs = db.query(models.UsageLog).filter(models.UsageLog.user_id == current_user.id).all()
-    total_tokens = sum(log.total_tokens for log in logs); total_cost = sum(log.cost for log in logs); total_requests = len(logs)
-    model_stats = {}
-    for log in logs:
-        if log.model not in model_stats: model_stats[log.model] = {"tokens": 0, "requests": 0, "cost": 0.0}
-        model_stats[log.model]["tokens"] += log.total_tokens; model_stats[log.model]["requests"] += 1; model_stats[log.model]["cost"] += log.cost
-    return {"total_tokens": total_tokens, "total_cost": total_cost, "total_requests": total_requests, "model_stats": model_stats}
+    stats = db.query(
+        func.count(models.UsageLog.id).label("total_requests"),
+        func.sum(models.UsageLog.total_tokens).label("total_tokens"),
+        func.sum(models.UsageLog.cost).label("total_cost")
+    ).filter(models.UsageLog.user_id == current_user.id).first()
+
+    model_stats_query = db.query(
+        models.UsageLog.model,
+        func.count(models.UsageLog.id).label("requests"),
+        func.sum(models.UsageLog.total_tokens).label("tokens"),
+        func.sum(models.UsageLog.cost).label("cost")
+    ).filter(models.UsageLog.user_id == current_user.id).group_by(models.UsageLog.model).all()
+
+    model_stats = {m.model: {"requests": m.requests, "tokens": int(m.tokens or 0), "cost": float(m.cost or 0.0)} for m in model_stats_query}
+
+    return {
+        "total_requests": stats.total_requests or 0,
+        "total_tokens": int(stats.total_tokens or 0),
+        "total_cost": float(stats.total_cost or 0.0),
+        "model_stats": model_stats
+    }
 
 @app.get("/", include_in_schema=False)
-async def serve_home(): return HTMLResponse(content="<h1>AI Proxy v3.1</h1><p>Visit /docs for API documentation or use the Next.js frontend.</p>")
+async def serve_home(): return HTMLResponse(content="<h1>AI Proxy v3.2</h1><p>Visit /docs for API documentation.</p>")
 
 if __name__ == "__main__":
     import uvicorn
