@@ -1,17 +1,16 @@
-# 🚀 Universal AI Proxy v3.0
+# 🚀 Universal AI Proxy v3.2.0
 
-Professional AI Model Proxy with support for 100+ models, multi-provider load balancing, user management, and detailed usage tracking.
+Professional AI Model Proxy Gateway with support for 100+ models, multi-provider load balancing, secure user management, and detailed usage tracking.
 
 ## ✨ Key Features
 
 - **🤖 100+ Models Support**: Powered by LiteLLM, supporting OpenAI, Anthropic, Google, Hugging Face, and more.
-- **🛡️ Authentication & Authorization**: JWT-based user system with registration and login.
-- **🔑 API Key Management**: Users can generate and manage multiple internal API keys.
-- **📊 Usage Tracking**: Real-time token usage and cost calculation for every request.
-- **🌐 Load Balancer**: Distribute requests across multiple provider keys with priority routing.
-- **🕹️ Professional Dashboard**: Built-in UI for monitoring usage, testing models, and managing providers.
-- **🔌 Offline Capability**: All frontend assets are bundled locally; no external CDN dependencies.
-- **🗄️ Flexible Database**: Supports PostgreSQL for production and SQLite for local development.
+- **🛡️ Secure Auth System**: JWT-based authentication with SHA-256 hashed API keys.
+- **📊 Advanced Analytics**: Database-side token usage and cost calculation (PostgreSQL/SQLite).
+- **🌐 Proxy & Load Balancer**: HTTP/SOCKS5 proxy support with country-based routing and priority failover.
+- **🕹️ Professional Dashboard**: Modern dark-themed UI (Vue.js) with 100% locally bundled assets for offline use.
+- **⚡ Non-Blocking Performance**: Fully asynchronous architecture using `litellm.acompletion`.
+- **🔄 DevOps Ready**: Automated tagging, GitHub Releases, and GitLab mirroring.
 
 ## 🚀 Quick Start
 
@@ -20,11 +19,11 @@ Professional AI Model Proxy with support for 100+ models, multi-provider load ba
    pip install -r requirements.txt
    ```
 
-2. **Set Environment Variables**:
+2. **Environment Setup**:
    Create a `.env` file:
    ```env
    DATABASE_URL=sqlite:///./sql_app.db
-   SECRET_KEY=your_random_secret_key
+   SECRET_KEY=your_secure_random_key
    ```
 
 3. **Run the Server**:
@@ -33,26 +32,28 @@ Professional AI Model Proxy with support for 100+ models, multi-provider load ba
    ```
 
 4. **Access the Dashboard**:
-   Open `http://localhost:8100` in your browser.
+   Open `http://localhost:8100` in your browser. (The first registered user becomes Admin).
 
-## 🛠 Admin Setup
+## 🛠 Admin Capabilities
 
-1. The first user to register becomes the **Admin**.
-2. Navigate to **Providers** in the dashboard to add your AI API keys (OpenAI, etc.).
-3. Set priority and optional base URLs for custom endpoints (like New-API).
+- **Providers**: Add multiple API keys per provider with priority levels.
+- **Proxies**: Manage HTTP/SOCKS5 proxy lists for IP protection.
+- **Usage**: Monitor system-wide usage, costs, and token consumption.
 
-## 🧪 API Usage
+## 🤖 API Usage (OpenAI Compatible)
 
-Standard OpenAI-compatible endpoint:
 ```bash
 curl http://localhost:8100/api/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_INTERNAL_KEY" \
-  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_SECURE_KEY" \
   -d '{
-    "model": "openai/gpt-4o-mini",
-    "messages": [{"role": "user", "content": "Hello!"}]
+    "model": "openai/gpt-4o",
+    "messages": [{"role": "user", "content": "Hello world"}]
   }'
 ```
 
+## 📜 Development & Contributions
+
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md) for details.
+
 ---
-Developed by MovtiGroup
+Developed by **MovtiGroup**
