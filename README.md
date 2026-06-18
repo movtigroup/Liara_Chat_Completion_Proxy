@@ -1,4 +1,4 @@
-# 🚀 Universal AI Proxy v3.2.0
+# 🚀 Universal AI Proxy
 
 Professional AI Model Proxy Gateway with support for 100+ models, multi-provider load balancing, secure user management, and detailed usage tracking.
 
